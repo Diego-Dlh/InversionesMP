@@ -207,8 +207,8 @@ function renderTablaPagos(pagos) {
 
 async function cargarPagosFiltrados(mes = "") {
   const url = mes
-    ? `http://localhost:8000/api/pagos/?mes=${mes}`
-    : `http://localhost:8000/api/pagos/`;
+    ? `https://inversiones-api.onrender.com/api/pagos/?mes=${mes}`
+    : `https://inversiones-api.onrender.com/api/pagos/`;
   const pagos = await fetchWithAuth(url);
   renderTablaPagos(pagos);
 
@@ -281,7 +281,7 @@ document
 
     const token = localStorage.getItem("token");
 
-    const res = await fetch("http://localhost:8000/api/usuarios/", {
+    const res = await fetch("https://inversiones-api.onrender.com/api/usuarios/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -316,7 +316,7 @@ document.getElementById("form-deudor").addEventListener("submit", async (e) => {
 
   const token = localStorage.getItem("token");
 
-  const res = await fetch("http://localhost:8000/api/deudores/", {
+  const res = await fetch("https://inversiones-api.onrender.com/api/deudores/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -333,7 +333,7 @@ document.getElementById("form-deudor").addEventListener("submit", async (e) => {
     document.getElementById("form-deudor").reset();
 
     // Actualizar tabla
-    const nuevosDeudores = await fetchWithAuth("http://localhost:8000/api/deudores/");
+    const nuevosDeudores = await fetchWithAuth("https://inversiones-api.onrender.com/api/deudores/");
     deudoresGlobal = nuevosDeudores;
     renderTablaDeudores(nuevosDeudores);
 
