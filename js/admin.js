@@ -16,10 +16,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     const deudores = await fetchWithAuth("https://inversiones-api.onrender.com/api/deudores/");
     const usuarios = await fetchWithAuth("https://inversiones-api.onrender.com/api/usuarios/");
-    const prestamos = await fetchWithAuth(
-      "https://inversiones-api.onrender.com/api/prestamos/"
-    );
-    const pagos = await fetchWithAuth("https://inversiones-api.onrender.com/api/pagos/");
+    const prestamos = await fetchWithAuth("https://inversiones-api.onrender.com/api/prestamos/");
+    const pagos = await fetchWithAuth("https://inversiones-api.onrender.com/api/pagos");
 
     renderTablaCobradores(usuarios);
     cargarOpcionesCobradores(usuarios);
