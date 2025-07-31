@@ -1,0 +1,126 @@
+<!-- cobrador.html -->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard Cobrador</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50 font-sans">
+    <!-- Header -->
+    <header class="bg-blue-900 text-white px-6 py-5 flex justify-between items-center shadow-md">
+      <h1 class="text-2xl font-bold tracking-wide">Inversiones MP</h1>
+      <button id="logout-btn" class="bg-white text-blue-900 px-4 py-1 rounded shadow">Cerrar sesión</button>
+    </header>
+
+    <!-- Resumen -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
+      <div class="bg-white rounded-xl shadow p-4">
+        <p class="text-sm text-gray-500">Deudores</p>
+        <p class="text-yellow-500 font-bold text-2xl"><span id="deudores-count">0</span></p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4">
+        <p class="text-sm text-gray-500">Préstamos</p>
+        <p class="text-yellow-500 font-bold text-2xl"><span id="prestamos-count">0</span></p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4">
+        <p class="text-sm text-gray-500">Pagos</p>
+        <p class="text-yellow-500 font-bold text-2xl"><span id="pagos-count">0</span></p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4">
+        <p class="text-sm text-gray-500">Total Recaudado (mes)</p>
+        <p class="text-green-600 font-bold text-2xl">$<span id="total-recaudado">0</span></p>
+      </div>
+    </section>
+
+    <!-- Aquí pueden venir más secciones como tabla de deudores, préstamos, pagos -->
+     <!-- Tabla de Deudores -->
+<section class="p-4">
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold text-blue-900">Mis Deudores</h2>
+      <button id="btn-toggle-modal-deudor"
+        class="bg-blue-900 text-white px-4 py-2 rounded shadow hover:bg-blue-800">
+        ➕ Agregar Cliente
+      </button>
+    </div>
+    <div class="overflow-y-auto max-h-80 border rounded">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-100 text-gray-700 font-semibold">
+          <tr>
+            <th class="p-2 text-left">Nombre</th>
+            <th class="p-2 text-left">Identificación</th>
+            <th class="p-2 text-left">Teléfono</th>
+            <th class="p-2 text-left">Dirección</th>
+            <th class="p-2 text-left">Tipo</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-deudores" class="text-gray-800">
+          <!-- JS insertará filas -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Tabla de Préstamos -->
+<section class="p-4">
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold text-blue-900">Mis Préstamos</h2>
+      <button id="btn-toggle-modal-prestamo"
+        class="bg-blue-900 text-white px-4 py-2 rounded shadow hover:bg-blue-800">
+        ➕ Agregar Préstamo
+      </button>
+    </div>
+    <div class="overflow-y-auto max-h-80 border rounded">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-100 text-gray-700 font-semibold">
+          <tr>
+            <th class="p-2 text-left">Deudor</th>
+            <th class="p-2 text-left">Monto</th>
+            <th class="p-2 text-left">Saldo</th>
+            <th class="p-2 text-left">Meses</th>
+            <th class="p-2 text-left">Fecha</th>
+            <th class="p-2 text-left">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-prestamos" class="text-gray-800">
+          <!-- JS insertará filas -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Tabla de Pagos -->
+<section class="p-4">
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold text-blue-900">Mis Pagos</h2>
+      <button id="btn-toggle-modal-pago"
+        class="bg-blue-900 text-white px-4 py-2 rounded shadow hover:bg-blue-800">
+        ➕ Registrar Pago
+      </button>
+    </div>
+    <div class="overflow-y-auto max-h-80 border rounded">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-100 text-gray-700 font-semibold">
+          <tr>
+            <th class="p-2 text-left">Deudor</th>
+            <th class="p-2 text-left">Monto</th>
+            <th class="p-2 text-left">Fecha</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-pagos" class="text-gray-800">
+          <!-- JS insertará filas -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+    <script type="module" src="js/cobrador.js"></script>
+  </body>
+</html>

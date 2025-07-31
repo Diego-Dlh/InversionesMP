@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="bg-gray-50 font-sans">
+  <div class="max-w-screen-sm mx-auto px-4 space-y-6">
+  <div class="max-w-screen-xl mx-auto px-4">
+    <!-- Header -->
+    <header
+      class="bg-blue-900 text-white px-6 py-5 flex justify-between items-center shadow-md"
+    >
+      <h1 class="text-lg font-bold tracking-wide">Inversiones MP</h1><span class="text-base font-light">Administrador</span>
+      <button
+        id="logout-btn"
+        class="bg-white text-blue-900 px-4 py-1 rounded shadow"
+      >
+        Cerrar sesión
+      </button>
+    </header>
+
+    <!-- Resumen -->
+    <section class="grid grid-cols-2 gap-4 px-4 pt-4 sm:grid-cols-3">
+      <div class="bg-white rounded-2xl shadow-md p-6 transform transition duration-300 hover:scale-105">
+        <p class="text-base text-gray-500">Clientes registrados</p>
+        <p class="text-yellow-500 font-bold text-2xl">
+          <span id="deudores-count">0</span>
+        </p>
+      </div>
+      <div class="bg-white rounded-2xl shadow-md p-6 transform transition duration-300 hover:scale-105">
+        <p class="text-base text-gray-500">Préstamos</p>
+        <p class="text-yellow-500 font-bold text-2xl">
+          <span id="prestamos-count">0</span>
+        </p>
+      </div>
+      <div class="bg-white rounded-2xl shadow-md p-6 transform transition duration-300 hover:scale-105">
+        <p class="text-base text-gray-500">Pagos</p>
+        <p class="text-yellow-500 font-bold text-2xl">
+          <span id="pagos-count">0</span>
+        </p>
+      </div>
+      <div class="bg-white rounded-2xl shadow-md p-6 transform transition duration-300 hover:scale-105">
+        <p class="text-base text-gray-500">Cobradores activos</p>
+        <p class="text-blue-900 font-bold text-2xl">
+          <span id="usuarios-count">0</span>
+        </p>
+      </div>
+      <div class="bg-white rounded-2xl shadow-md p-6 transform transition duration-300 hover:scale-105">
+        <p class="text-base text-gray-500">Total recaudado (mes)</p>
+        <p class="text-green-600 font-bold text-2xl">
+          $<span id="total-recaudado">0</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- Filtros de deudores -->
+    <section class="p-4">
+      <div class="bg-white rounded-2xl shadow-md p-6 transform transition duration-300 hover:scale-105">
+        <label
+          for="buscar-deudor"
+          class="block text-base font-medium text-gray-700 mb-1"
+          >Buscar deudor:</label
+        >
+        <input
+          type="text"
+          id="buscar-deudor"
+          placeholder="Nombre o identificación"
+          class="bg-gray-50 border border-gray-300 rounded-md px-4 py-3 text-base w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+    </section>
+
+<section class="p-4">
+  
+    
+    <!-- Lista de Deudores -->
+    <div class="bg-white rounded-2xl shadow-md p-6 transform transition duration-300 hover:scale-105">
+      <h2 class="text-xl font-bold text-blue-900 mb-4 leading-tight">Lista de Deudores</h2>
+      <!-- Botón para abrir modal -->
+<button id="btn-toggle-modal-deudor"
+  class="bg-blue-900 text-white px-4 py-3 rounded-lg shadow-md hover:bg-blue-800 active:scale-95 transition duration-200 mb-3">
+  ➕ Agregar Deudor
+</button>
+
+<!-- Modal -->
+<div id="modal-deudor"
+  class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-xl shadow-lg w-full p-6 space-y-4 relative">
+    <button id="btn-close-modal-deudor"
+      class="absolute top-2 right-3 text-gray-400 hover:text-gray-700 text-xl font-bold">
+      &times;
+    </button>
+    <h2 class="text-lg font-semibold text-blue-900">Nuevo Deudor</h2>
+
+    <form id="form-deudor" class="space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <input type="text" id="deudor-nombre" placeholder="Nombre" required
+          class="bg-gray-50 border border-gray-300 rounded px-4 py-3 text-base w-full" />
+        <input type="text" id="deudor-apellido" placeholder="Apellido" required
+          class="bg-gray-50 border border-gray-300 rounded px-4 py-3 text-base w-full" />
+        <input type="text" id="deudor-identificacion" placeholder="Identificación" required
+          class="bg-gray-50 border border-gray-300 rounded px-4 py-3 text-base w-full" />
+        <input type="text" id="deudor-telefono" placeholder="Teléfono"
+          class="bg-gray-50 border border-gray-300 rounded px-4 py-3 text-base w-full" />
+        <input type="text" id="deudor-direccion" placeholder="Dirección"
+          class="bg-gray-50 border border-gray-300 rounded px-4 py-3 text-base w-full" />
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <select id="deudor-tipo" required
+          class="bg-gray-50 border border-gray-300 rounded px-4 py-3 text-base w-full">
+          <option value="">Tipo de Deudor</option>
+          <option value="1">Normal</option>
+          <option value="2">Especial</option>
+        </select>
+
+        <select id="deudor-cobrador" required
+          class="bg-gray-50 border border-gray-300 rounded px-4 py-3 text-base w-full">
+          <option value="">Seleccionar Cobrador</option>
+          <!-- Opciones dinámicas desde JS -->
+        </select>
+      </div>
+
+      <button type="submit"
+        class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition">Guardar</button>
+    </form>
+  </div>
+</div>
+      <div class="overflow-x-auto -mx-4 sm:mx-0">
+        <table class="min-w-full table-auto text-base">
+          <thead class="bg-gray-100 text-gray-700 font-semibold">
+            <tr>
+              <th class="p-2 text-left">Nombre</th>
+              <th class="p-2 text-left">Identificación</th>
+              <th class="p-2 text-left">Teléfono</th>
+              <th class="p-2 text-left">Dirección</th>
+              <th class="p-2 text-left">Tipo</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-deudores-container" class="text-gray-800">
+            <!-- JS insertará filas -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    </div>
+
+<!-- Lista de Cobradores -->
+    <div class="bg-white rounded-2xl shadow-md p-6 transform transition duration-300 hover:scale-105">
+      <h2 class="text-xl font-bold text-blue-900 mb-4 leading-tight">Lista de Cobradores</h2>
+<!-- Botón flotante arriba de la tabla de cobradores -->
+<button id="btn-toggle-modal"
+  class="bg-blue-900 text-white px-4 py-3 rounded-lg shadow-md hover:bg-blue-800 active:scale-95 transition duration-200 mb-3">
+  ➕ Agregar Cobrador
+</button>
+
+<!-- Modal flotante -->
+<div id="modal-cobrador"
+  class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-xl shadow-lg w-full p-6 space-y-4 relative">
+    <button id="btn-close-modal"
+      class="absolute top-2 right-3 text-gray-400 hover:text-gray-700 text-xl font-bold">
+      &times;
+    </button>
+    <h2 class="text-lg font-semibold text-blue-900">Nuevo Cobrador</h2>
+    <form id="form-cobrador" class="space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <input type="text" id="nuevo-nombre" placeholder="Nombre" required
+          class="bg-gray-50 border border-gray-300 rounded px-4 py-3 text-base w-full" />
+        <input type="text" id="nuevo-apellido" placeholder="Apellido" required
+          class="bg-gray-50 border border-gray-300 rounded px-4 py-3 text-base w-full" />
+        <input type="text" id="nuevo-identificacion" placeholder="Identificación" required
+          class="bg-gray-50 border border-gray-300 rounded px-4 py-3 text-base w-full" />
+        <input type="text" id="nuevo-telefono" placeholder="Teléfono"
+          class="bg-gray-50 border border-gray-300 rounded px-4 py-3 text-base w-full" />
+      </div>
+      <button type="submit"
+        class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition">Guardar</button>
+    </form>
+  </div>
+</div>
+      <div class="overflow-x-auto -mx-4 sm:mx-0">
+        <table class="min-w-full table-auto text-base">
+          <thead class="bg-gray-100 text-gray-700 font-semibold">
+            <tr>
+              <th class="p-2 text-left">Nombre</th>
+              <th class="p-2 text-left">Identificación</th>
+              <th class="p-2 text-left">Teléfono</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-cobradores-container" class="text-gray-800">
+            <!-- JS insertará filas -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+    <!-- Filtros de préstamos -->
+    <section class="p-4">
+      <div
+        class="bg-white rounded-xl shadow p-4 grid grid-cols-1 md:grid-cols-3 gap-4"
+      >
+        <div>
+          <label
+            for="buscar-prestamo"
+            class="block text-base font-medium text-gray-700 mb-1"
+            >Buscar préstamo por nombre:</label
+          >
+          <input
+            type="text"
+            id="buscar-prestamo"
+            placeholder="Nombre del deudor"
+            class="bg-gray-50 border border-gray-300 rounded-md px-4 py-3 text-base w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label
+            for="filtro-estado"
+            class="block text-base font-medium text-gray-700 mb-1"
+            >Estado:</label
+          >
+          <select
+            id="filtro-estado"
+            class="bg-gray-50 border border-gray-300 rounded-md px-4 py-3 text-base w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Todos</option>
+            <option value="1">Pendiente</option>
+            <option value="2">Pagado</option>
+            <option value="3">En mora</option>
+          </select>
+        </div>
+        <div>
+          <label
+            for="filtro-cobrador"
+            class="block text-base font-medium text-gray-700 mb-1"
+            >Cobrador:</label
+          >
+          <select
+            id="filtro-cobrador"
+            class="bg-gray-50 border border-gray-300 rounded-md px-4 py-3 text-base w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabla de préstamos -->
+    <section class="p-4">
+      <div class="bg-white rounded-2xl shadow-md p-6 transform transition duration-300 hover:scale-105">
+        <h2 class="text-xl font-bold text-blue-900 mb-4 leading-tight">
+          Lista de Préstamos
+        </h2>
+        <div class="overflow-x-auto -mx-4 sm:mx-0">
+          <table class="min-w-full table-auto border border-gray-200 text-base">
+            <thead class="bg-gray-100 text-gray-700 font-semibold">
+              <tr>
+                <th class="p-2 text-left">Deudor</th>
+                <th class="p-2 text-left">Monto</th>
+                <th class="p-2 text-left">Saldo Pendiente</th>
+                <th class="p-2 text-left">Meses</th>
+                <th class="p-2 text-left">Fecha</th>
+                <th class="p-2 text-left">Estado</th>
+                <th class="p-2 text-left">Cobrador</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-prestamos-container" class="text-gray-800">
+              <!-- JS insertará las filas -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filtro de pagos -->
+    <section class="p-4">
+      <div class="bg-white rounded-xl shadow p-4 max-w-xs">
+        <label for="filtro-mes" class="text-base font-medium text-gray-700 mb-1"
+          >Filtrar pagos por mes:</label
+        >
+        <select
+          id="filtro-mes"
+          class="bg-gray-50 border border-gray-300 rounded-md px-4 py-3 text-base w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Todos</option>
+          <option value="1">Enero</option>
+          <option value="2">Febrero</option>
+          <option value="3">Marzo</option>
+          <option value="4">Abril</option>
+          <option value="5">Mayo</option>
+          <option value="6">Junio</option>
+          <option value="7">Julio</option>
+          <option value="8">Agosto</option>
+          <option value="9">Septiembre</option>
+          <option value="10">Octubre</option>
+          <option value="11">Noviembre</option>
+          <option value="12">Diciembre</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Tabla de pagos -->
+    <section class="p-4">
+      <div class="bg-white rounded-2xl shadow-md p-6 transform transition duration-300 hover:scale-105">
+        <h2 class="text-xl font-bold text-blue-900 mb-4 leading-tight">
+          Últimos movimientos
+        </h2>
+        <div class="overflow-x-auto -mx-4 sm:mx-0">
+          <table class="min-w-full table-auto text-base">
+            <thead class="bg-gray-50 text-gray-700 font-semibold">
+              <tr>
+                <th class="p-2 text-left">Deudor</th>
+                <th class="p-2 text-left">Cobrador</th>
+                <th class="p-2 text-left">Monto</th>
+                <th class="p-2 text-left">Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-pagos-container" class="text-gray-800">
+              <!-- JS insertará las filas -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="js/admin.js"></script>
+    <!-- Toast de éxito -->
+<div id="toast-exito"
+  class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg hidden z-50 transition-opacity duration-500 ease-in-out">
+  ✅ Deudor creado exitosamente
+</div>
+
+  
+<!-- Toast error -->
+<div id="toast-error"
+  class="fixed bottom-6 right-6 bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg hidden z-50 transition-opacity duration-500 ease-in-out">
+  ❌ Ha ocurrido un error.
+</div>
+  </div>
+  </div>
+</body>
+
+</html>
