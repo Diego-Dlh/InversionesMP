@@ -12,46 +12,46 @@
   <body class="bg-gray-50 font-sans">
     <!-- Header -->
     <header
-      class="bg-blue-900 text-white px-6 py-5 flex justify-between items-center shadow-md"
+      class="bg-gray-900 text-white px-6 py-5 flex justify-between items-center shadow-md"
     >
-      <h1 class="text-2xl font-bold tracking-wide">Inversiones MP</h1>
+      <h1 class="text-xl font-semibold tracking-tight">Inversiones MP</h1>
       <button
         id="logout-btn"
-        class="bg-white text-blue-900 px-4 py-1 rounded shadow"
+        class="bg-white text-gray-900 px-4 py-1 rounded shadow"
       >
         Cerrar sesión
       </button>
     </header>
 
     <!-- Resumen -->
-    <section class="grid grid-cols-1 md:grid-cols-5 gap-4 p-4">
-      <div class="bg-white rounded-xl shadow p-4 transform transition duration-300 hover:scale-105">
+    <section class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 p-4">
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 transform transition duration-300 hover:scale-105">
         <p class="text-sm text-gray-500">Clientes registrados</p>
-        <p class="text-yellow-500 font-bold text-2xl">
+        <p class="text-emerald-600 font-bold text-2xl">
           <span id="deudores-count">0</span>
         </p>
       </div>
-      <div class="bg-white rounded-xl shadow p-4 transform transition duration-300 hover:scale-105">
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 transform transition duration-300 hover:scale-105">
         <p class="text-sm text-gray-500">Préstamos</p>
-        <p class="text-yellow-500 font-bold text-2xl">
+        <p class="text-emerald-600 font-bold text-2xl">
           <span id="prestamos-count">0</span>
         </p>
       </div>
-      <div class="bg-white rounded-xl shadow p-4 transform transition duration-300 hover:scale-105">
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 transform transition duration-300 hover:scale-105">
         <p class="text-sm text-gray-500">Pagos</p>
-        <p class="text-yellow-500 font-bold text-2xl">
+        <p class="text-emerald-600 font-bold text-2xl">
           <span id="pagos-count">0</span>
         </p>
       </div>
-      <div class="bg-white rounded-xl shadow p-4 transform transition duration-300 hover:scale-105">
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 transform transition duration-300 hover:scale-105">
         <p class="text-sm text-gray-500">Cobradores activos</p>
-        <p class="text-blue-900 font-bold text-2xl">
+        <p class="text-gray-900 font-bold text-2xl">
           <span id="usuarios-count">0</span>
         </p>
       </div>
-      <div class="bg-white rounded-xl shadow p-4 transform transition duration-300 hover:scale-105">
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 transform transition duration-300 hover:scale-105">
         <p class="text-sm text-gray-500">Total recaudado (mes)</p>
-        <p class="text-green-600 font-bold text-2xl">
+        <p class="text-emerald-600 font-bold text-2xl">
           $<span id="total-recaudado">0</span>
         </p>
       </div>
@@ -59,7 +59,7 @@
 
     <!-- Filtros de deudores -->
     <section class="px-4 py-6">
-      <div class="bg-white rounded-xl shadow p-4 transform transition duration-300 hover:scale-105">
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 transform transition duration-300 hover:scale-105">
         <label
           for="buscar-deudor"
           class="block text-sm font-medium text-gray-700 mb-1"
@@ -69,7 +69,7 @@
           type="text"
           id="buscar-deudor"
           placeholder="Nombre o identificación"
-          class="border border-gray-300 rounded-md px-3 py-2 w-full max-w-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="border border-gray-300 rounded-md px-3 py-2 w-full max-w-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
         />
       </div>
     </section>
@@ -78,23 +78,23 @@
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     
     <!-- Lista de Deudores -->
-    <div class="bg-white rounded-xl shadow p-4 transform transition duration-300 hover:scale-105">
-      <h2 class="text-lg font-semibold text-blue-900 mb-2">Lista de Deudores</h2>
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 transform transition duration-300 hover:scale-105">
+      <h2 class="text-lg font-semibold text-gray-900 mb-2">Lista de Deudores</h2>
       <!-- Botón para abrir modal -->
 <button id="btn-toggle-modal-deudor"
-  class="bg-blue-900 text-white px-4 py-2 rounded shadow hover:bg-blue-800 active:scale-95 transition duration-200 mb-3">
+  class="bg-gray-900 text-white px-4 py-2 rounded shadow hover:bg-gray-800 active:scale-95 transition duration-200 mb-3">
   ➕ Agregar Deudor
 </button>
 
 <!-- Modal -->
 <div id="modal-deudor"
   class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
-  <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-6 space-y-4 relative mx-4">
+  <div class="bg-white rounded-lg border border-gray-200 shadow-sm-lg w-full max-w-md p-6 space-y-4 relative mx-4">
     <button id="btn-close-modal-deudor"
       class="absolute top-2 right-3 text-gray-400 hover:text-gray-700 text-xl font-bold">
       &times;
     </button>
-    <h2 class="text-lg font-semibold text-blue-900">Nuevo Deudor</h2>
+    <h2 class="text-lg font-semibold text-gray-900">Nuevo Deudor</h2>
 
     <form id="form-deudor" class="space-y-3">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -149,23 +149,23 @@
     </div>
 
     <!-- Lista de Cobradores -->
-    <div class="bg-white rounded-xl shadow p-4 transform transition duration-300 hover:scale-105">
-      <h2 class="text-lg font-semibold text-blue-900 mb-2">Lista de Cobradores</h2>
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 transform transition duration-300 hover:scale-105">
+      <h2 class="text-lg font-semibold text-gray-900 mb-2">Lista de Cobradores</h2>
 <!-- Botón flotante arriba de la tabla de cobradores -->
 <button id="btn-toggle-modal"
-  class="bg-blue-900 text-white px-4 py-2 rounded shadow hover:bg-blue-800 active:scale-95 transition duration-200 mb-3">
+  class="bg-gray-900 text-white px-4 py-2 rounded shadow hover:bg-gray-800 active:scale-95 transition duration-200 mb-3">
   ➕ Agregar Cobrador
 </button>
 
 <!-- Modal flotante -->
 <div id="modal-cobrador"
   class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
-  <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-6 space-y-4 relative mx-4">
+  <div class="bg-white rounded-lg border border-gray-200 shadow-sm-lg w-full max-w-md p-6 space-y-4 relative mx-4">
     <button id="btn-close-modal"
       class="absolute top-2 right-3 text-gray-400 hover:text-gray-700 text-xl font-bold">
       &times;
     </button>
-    <h2 class="text-lg font-semibold text-blue-900">Nuevo Cobrador</h2>
+    <h2 class="text-lg font-semibold text-gray-900">Nuevo Cobrador</h2>
     <form id="form-cobrador" class="space-y-3">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <input type="text" id="nuevo-nombre" placeholder="Nombre" required
@@ -205,7 +205,7 @@
     <!-- Filtros de préstamos -->
     <section class="px-4 py-6">
       <div
-        class="bg-white rounded-xl shadow p-4 grid grid-cols-1 md:grid-cols-3 gap-4"
+        class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 grid grid-cols-1 md:grid-cols-3 gap-4"
       >
         <div>
           <label
@@ -217,7 +217,7 @@
             type="text"
             id="buscar-prestamo"
             placeholder="Nombre del deudor"
-            class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
           />
         </div>
         <div>
@@ -228,7 +228,7 @@
           >
           <select
             id="filtro-estado"
-            class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
           >
             <option value="">Todos</option>
             <option value="1">Pendiente</option>
@@ -244,7 +244,7 @@
           >
           <select
             id="filtro-cobrador"
-            class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
           >
             <option value="">Todos</option>
           </select>
@@ -254,8 +254,8 @@
 
     <!-- Tabla de préstamos -->
     <section class="px-4 py-6">
-      <div class="bg-white rounded-xl shadow p-4 transform transition duration-300 hover:scale-105">
-        <h2 class="text-lg font-semibold text-blue-900 mb-2">
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 transform transition duration-300 hover:scale-105">
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">
           Lista de Préstamos
         </h2>
         <div class="overflow-y-auto max-h-96 border border-gray-200 rounded">
@@ -281,13 +281,13 @@
 
     <!-- Filtro de pagos -->
     <section class="px-4 py-6">
-      <div class="bg-white rounded-xl shadow p-4 max-w-xs">
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 max-w-xs">
         <label for="filtro-mes" class="text-sm font-medium text-gray-700 mb-1"
           >Filtrar pagos por mes:</label
         >
         <select
           id="filtro-mes"
-          class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
         >
           <option value="">Todos</option>
           <option value="1">Enero</option>
@@ -308,8 +308,8 @@
 
     <!-- Tabla de pagos -->
     <section class="px-4 py-6">
-      <div class="bg-white rounded-xl shadow p-4 transform transition duration-300 hover:scale-105">
-        <h2 class="text-lg font-semibold text-blue-900 mb-2">
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 transform transition duration-300 hover:scale-105">
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">
           Últimos movimientos
         </h2>
         <div class="overflow-y-auto max-h-96 border border-gray-200 rounded">
@@ -333,14 +333,14 @@
     <script type="module" src="js/admin.js"></script>
     <!-- Toast de éxito -->
 <div id="toast-exito"
-  class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg hidden z-50 transition-opacity duration-500 ease-in-out">
+  class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-3 rounded-lg shadow-md hidden z-50 transition-opacity duration-500 ease-in-out">
   ✅ Deudor creado exitosamente
 </div>
 
   
 <!-- Toast error -->
 <div id="toast-error"
-  class="fixed bottom-6 right-6 bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg hidden z-50 transition-opacity duration-500 ease-in-out">
+  class="fixed bottom-6 right-6 bg-red-600 text-white px-4 py-3 rounded-lg shadow-md hidden z-50 transition-opacity duration-500 ease-in-out">
   ❌ Ha ocurrido un error.
 </div>
 </body>
