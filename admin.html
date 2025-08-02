@@ -346,6 +346,39 @@
   class="fixed bottom-6 right-6 bg-red-600 text-white px-4 py-3 rounded-lg shadow-md hidden z-50 transition-opacity duration-500 ease-in-out">
   ❌ Ha ocurrido un error.
 </div>
+
+<!-- Menú contextual flotante -->
+<div id="menu-contextual-usuario"
+  class="absolute z-50 bg-white border border-gray-200 rounded shadow-md hidden w-48 text-sm">
+  <button id="btn-editar-usuario" class="w-full text-left px-4 py-2 hover:bg-gray-100">✏️ Editar</button>
+  <button id="btn-eliminar-usuario" class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">🗑 Eliminar</button>
+</div>
+
+<!-- Modal de edición de usuario -->
+<div id="modal-editar-usuario" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-lg border border-gray-200 shadow-lg w-full max-w-md p-6 relative mx-4 space-y-4">
+    <button id="btn-close-modal-editar-usuario"
+      class="absolute top-2 right-3 text-gray-400 hover:text-gray-700 text-xl font-bold">&times;</button>
+    <h2 class="text-lg font-semibold text-gray-900">Editar Cobrador</h2>
+
+    <form id="form-editar-usuario" class="space-y-3">
+      <input type="hidden" id="editar-id" />
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <input type="text" id="editar-nombre" placeholder="Nombre" required
+          class="border border-gray-300 rounded px-3 py-2 w-full" />
+        <input type="text" id="editar-apellido" placeholder="Apellido" required
+          class="border border-gray-300 rounded px-3 py-2 w-full" />
+        <input type="text" id="editar-identificacion" placeholder="Identificación" required
+          class="border border-gray-300 rounded px-3 py-2 w-full" />
+        <input type="text" id="editar-telefono" placeholder="Teléfono"
+          class="border border-gray-300 rounded px-3 py-2 w-full" />
+      </div>
+      <button type="submit"
+        class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Guardar cambios</button>
+    </form>
+  </div>
+</div>
 </body>
+
 
 </html>

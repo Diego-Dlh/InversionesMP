@@ -374,3 +374,120 @@ function mostrarToast(tipo = "exito", mensaje = "") {
     toast.classList.add("hidden");
   }, 3000);
 }
+
+
+// ========================
+// MENÚ Y EDICIÓN DE USUARIOS
+// ========================
+
+let selectedUsuario = null;
+
+document.addEventListener("click", (e) => {
+  const menu = document.getElementById("menu-contextual-usuario");
+  if (!menu.contains(e.target)) {
+    menu.classList.add("hidden");
+  }
+});
+
+function renderTablaCobradores(cobradores) {
+  const tbody = document.getElementById("tabla-cobradores-container");
+  tbody.innerHTML = "";
+
+  cobradores.forEach((c) => {
+    const fila = document.createElement("tr");
+    fila.dataset.id = c.id;
+    fila.dataset.nombre = c.nombre;
+    fila.dataset.apellido = c.apellido;
+    fila.dataset.identificacion = c.identificacion;
+    fila.dataset.telefono = c.telefono;
+
+    fila.innerHTML = `
+      <td class="p-2 text-blue-700 font-medium cursor-pointer hover:underline">${c.nombre} ${c.apellido}</td>
+      <td class="p-2">${c.identificacion}</td>
+      <td class="p-2">${c.telefono}</td>
+    `;
+
+    // Mostrar menú contextual al hacer clic en nombre
+    fila.children[0].addEventListener("click", (event) => {
+      event.stopPropagation();
+      selectedUsuario = c;
+      const menu = document.getElementById("menu-contextual-usuario");
+      menu.style.top = `${event.clientY}px`;
+      menu.style.left = `${event.clientX}px`;
+      menu.classList.remove("hidden");
+
+      document.getElementById("btn-editar-usuario").textContent = `✏️ Editar a ${c.nombre}`;
+      document.getElementById("btn-eliminar-usuario").textContent = `🗑 Eliminar a ${c.nombre}`;
+    });
+
+    tbody.appendChild(fila);
+  });
+}
+
+// Botón cerrar modal editar
+document.getElementById("btn-close-modal-editar-usuario").addEventListener("click", () => {
+  document.getElementById("modal-editar-usuario").classList.add("hidden");
+});
+
+// Botón abrir modal editar
+document.getElementById("btn-editar-usuario").addEventListener("click", () => {
+  const modal = document.getElementById("modal-editar-usuario");
+  modal.classList.remove("hidden");
+
+  document.getElementById("editar-id").value = selectedUsuario.id;
+  document.getElementById("editar-nombre").value = selectedUsuario.nombre;
+  document.getElementById("editar-apellido").value = selectedUsuario.apellido;
+  document.getElementById("editar-identificacion").value = selectedUsuario.identificacion;
+  document.getElementById("editar-telefono").value = selectedUsuario.telefono;
+});
+
+// Guardar edición usuario
+document.getElementById("form-editar-usuario").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const id = document.getElementById("editar-id").value;
+  const data = {
+    nombre: document.getElementById("editar-nombre").value,
+    apellido: document.getElementById("editar-apellido").value,
+    identificacion: document.getElementById("editar-identificacion").value,
+    telefono: document.getElementById("editar-telefono").value,
+  };
+
+  const token = localStorage.getItem("token");
+  const res = await fetch(`https://inversiones-api.onrender.com/api/usuarios/${id}/`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (res.ok) {
+    mostrarToast("exito", "Usuario actualizado con éxito");
+    document.getElementById("modal-editar-usuario").classList.add("hidden");
+    location.reload();
+  } else {
+    mostrarToast("error", "Error al actualizar usuario");
+  }
+});
+
+// Eliminar usuario
+document.getElementById("btn-eliminar-usuario").addEventListener("click", async () => {
+  if (!confirm(`¿Estás seguro de eliminar a ${selectedUsuario.nombre}?`)) return;
+
+  const token = localStorage.getItem("token");
+  const res = await fetch(`https://inversiones-api.onrender.com/api/usuarios/${selectedUsuario.id}/`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (res.ok) {
+    mostrarToast("exito", "Usuario eliminado");
+    location.reload();
+  } else {
+    mostrarToast("error", "Error al eliminar usuario");
+  }
+});
