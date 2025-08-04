@@ -106,6 +106,12 @@ document.getElementById("btn-close-modal-deudor").addEventListener("click", () =
   modalDeudor.classList.add("hidden");
   document.getElementById("form-deudor").reset();
 });
+document.addEventListener("click", (e) => {
+  const menu = document.getElementById("menu-deudor");
+  if (menu && !menu.contains(e.target)) {
+    menu.classList.add("hidden");
+  }
+});
 
 });
 
@@ -115,19 +121,50 @@ function renderTablaDeudores(deudores) {
 
   deudores.forEach((d) => {
     const fila = document.createElement("tr");
-    let tipo = "";
-    if( d.tipo == "1") {
-      tipo = "normal";
-    } else if (d.tipo == "2") {
-      tipo = "especial";
-    }
+    let tipo = d.tipo === "1" ? "normal" : d.tipo === "2" ? "especial" : "";
+
+    const btn = document.createElement("button");
+    btn.className = "text-blue-700 font-medium hover:underline focus:outline-none";
+    btn.textContent = d.nombre;
+    btn.dataset.id = d.id;
+    btn.dataset.nombre = d.nombre;
+    btn.dataset.apellido = d.apellido;
+    btn.dataset.identificacion = d.id;
+    btn.dataset.telefono = d.telefono;
+    btn.dataset.direccion = d.direccion;
+    btn.dataset.tipo = d.tipo;
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      console.log("Clic detectado en:", btn.dataset.nombre);
+
+      const menu = document.getElementById("menu-deudor");
+      const info = document.getElementById("info-deudor");
+
+      const tipoTexto = btn.dataset.tipo === "1" ? "Normal" : "Especial";
+
+      info.innerHTML = `
+        <p><strong>${btn.dataset.nombre} ${btn.dataset.apellido}</strong></p>
+        <p>ID: ${btn.dataset.identificacion}</p>
+        <p>Tel: ${btn.dataset.telefono}</p>
+        <p>Dir: ${btn.dataset.direccion}</p>
+        <p>Tipo: ${tipoTexto}</p>
+      `;
+
+      menu.style.top = `${e.pageY}px`;
+      menu.style.left = `${e.pageX}px`;
+      menu.classList.remove("hidden");
+    });
+
     fila.innerHTML = `
-      <td class="p-2">${d.nombre}</td>
+      <td class="p-2"></td>
       <td class="p-2">${d.id}</td>
       <td class="p-2">${d.telefono}</td>
       <td class="p-2">${d.direccion}</td>
       <td class="p-2">${tipo}</td>
     `;
+
+    fila.children[0].appendChild(btn);
     tbody.appendChild(fila);
   });
 }
@@ -374,3 +411,4 @@ function mostrarToast(tipo = "exito", mensaje = "") {
     toast.classList.add("hidden");
   }, 3000);
 }
+
