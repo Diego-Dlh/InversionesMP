@@ -107,8 +107,8 @@ document.getElementById("btn-close-modal-deudor").addEventListener("click", () =
   document.getElementById("form-deudor").reset();
 });
 
-});
 
+});
 function renderTablaDeudores(deudores) {
   const tbody = document.getElementById("tabla-deudores-container");
   tbody.innerHTML = "";
@@ -131,7 +131,6 @@ function renderTablaDeudores(deudores) {
     tbody.appendChild(fila);
   });
 }
-
 function renderTablaPrestamos(prestamos) {
   const tbody = document.getElementById("tabla-prestamos-container");
   tbody.innerHTML = "";
@@ -169,7 +168,6 @@ function renderTablaPrestamos(prestamos) {
     tbody.appendChild(fila);
   });
 }
-
 function aplicarFiltrosPrestamos() {
   const texto = document.getElementById("buscar-prestamo").value.toLowerCase();
   const estado = document.getElementById("filtro-estado").value;
@@ -185,7 +183,6 @@ function aplicarFiltrosPrestamos() {
 
   renderTablaPrestamos(filtrados);
 }
-
 function renderTablaPagos(pagos) {
   const tbody = document.getElementById("tabla-pagos-container");
   tbody.innerHTML = "";
@@ -204,7 +201,6 @@ function renderTablaPagos(pagos) {
     tbody.appendChild(fila);
   });
 }
-
 async function cargarPagosFiltrados(mes = "") {
   const url = mes
     ? `https://inversiones-api.onrender.com/api/pagos/?mes=${mes}`
@@ -220,7 +216,6 @@ async function cargarPagosFiltrados(mes = "") {
   document.getElementById("total-recaudado").textContent =
     totalMes.toLocaleString("es-CO");
 }
-
 function formatearFecha(fechaISO) {
   const fecha = new Date(fechaISO);
   return fecha.toLocaleString("es-ES", {
@@ -231,7 +226,6 @@ function formatearFecha(fechaISO) {
     minute: "2-digit",
   });
 }
-
 function getNombreDeudorDesdePago(pago) {
   const prestamo = prestamosGlobal.find((pr) => pr.id === pago.prestamo);
   if (!prestamo) return "Prestamo no encontrado";
@@ -241,7 +235,6 @@ function getNombreDeudorDesdePago(pago) {
     ? `${deudor.nombre} ${deudor.apellido}`
     : "Deudor no encontrado";
 }
-
 function getNombreCobradorDesdePago(pago) {
   const prestamo = prestamosGlobal.find((pr) => pr.id === pago.prestamo);
   if (!prestamo) return "Préstamo no encontrado";
@@ -249,7 +242,6 @@ function getNombreCobradorDesdePago(pago) {
   const cobrador = usuariosMap.get(prestamo.cobrador);
   return cobrador || "Cobrador no encontrado";
 }
-
 function renderTablaCobradores(cobradores) {
   const tbody = document.getElementById("tabla-cobradores-container");
   tbody.innerHTML = "";
@@ -264,10 +256,7 @@ function renderTablaCobradores(cobradores) {
     tbody.appendChild(fila);
   });
 }
-
-document
-  .getElementById("form-cobrador")
-  .addEventListener("submit", async (e) => {
+document.getElementById("form-cobrador").addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const data = {
@@ -297,10 +286,8 @@ document
       mostrarToast("error", "Error al crear cobrador");
     }
   });
-
 // Definir fuera del submit para asegurar que esté disponible
 const modalDeudor = document.getElementById("modal-deudor");
-
 document.getElementById("form-deudor").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -345,8 +332,6 @@ document.getElementById("form-deudor").addEventListener("submit", async (e) => {
     mostrarToast("error", "Error al crear el deudor");
   }
 });
-
-
 function cargarOpcionesCobradores(usuarios) {
   const select = document.getElementById("deudor-cobrador");
   select.innerHTML = '<option value="">Seleccionar Cobrador</option>';
@@ -359,8 +344,6 @@ function cargarOpcionesCobradores(usuarios) {
       select.appendChild(option);
     });
 }
-
-
 function mostrarToast(tipo = "exito", mensaje = "") {
   const id = tipo === "error" ? "toast-error" : "toast-exito";
   const toast = document.getElementById(id);
@@ -373,4 +356,119 @@ function mostrarToast(tipo = "exito", mensaje = "") {
   setTimeout(() => {
     toast.classList.add("hidden");
   }, 3000);
+}
+// Modal Préstamo
+const modalPrestamo = document.getElementById("modal-prestamo");
+document.getElementById("btn-toggle-modal-prestamo").addEventListener("click", () => {
+  cargarSelectDeudores();
+  cargarSelectCobradores(); // ✅ nuevo
+  modalPrestamo.classList.remove("hidden");
+});
+document.getElementById("cerrar-modal-prestamo").addEventListener("click", () => {
+  modalPrestamo.classList.add("hidden");
+  document.getElementById("form-prestamo").reset();
+});
+// Modal Pago
+const modalPago = document.getElementById("modal-pago");
+document.getElementById("btn-toggle-modal-pago").addEventListener("click", () => {
+  cargarSelectPrestamos();
+  modalPago.classList.remove("hidden");
+});
+document.getElementById("btn-close-modal-pago").addEventListener("click", () => {
+  modalPago.classList.add("hidden");
+  document.getElementById("form-pago").reset();
+});
+// Cargar deudores en select
+function cargarSelectDeudores() {
+  const select = document.getElementById("prestamo-deudor");
+  select.innerHTML = '<option value="">Seleccionar Deudor</option>';
+  deudoresGlobal.forEach((d) => {
+    const option = document.createElement("option");
+    option.value = d.id;
+    option.textContent = `${d.nombre} ${d.apellido}`;
+    select.appendChild(option);
+  });
+}
+// Cargar préstamos en select
+function cargarSelectPrestamos() {
+  const select = document.getElementById("pago-prestamo");
+  select.innerHTML = '<option value="">Seleccionar Préstamo</option>';
+  prestamosGlobal.forEach((p) => {
+    const nombre = deudoresMap.get(p.deudor) || `ID: ${p.deudor}`;
+    const option = document.createElement("option");
+    option.value = p.id;
+    option.textContent = `${nombre} - $${Number(p.monto).toLocaleString("es-CO")}`;
+    select.appendChild(option);
+  });
+}
+// Enviar formulario préstamo
+document.getElementById("form-prestamo").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem("token");
+
+  const data = {
+    deudor: parseInt(document.getElementById("prestamo-deudor").value),
+    monto: parseInt(document.getElementById("prestamo-monto").value),
+    interes: parseInt(document.getElementById("prestamo-interes").value),
+    meses: parseInt(document.getElementById("prestamo-meses").value),
+    cobrador: parseInt(document.getElementById("prestamo-cobrador").value),
+  };
+
+  const res = await fetch("https://inversiones-api.onrender.com/api/prestamos/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (res.ok) {
+    mostrarToast("exito", "Préstamo registrado");
+    document.getElementById("modal-prestamo").classList.add("hidden");
+    document.getElementById("form-prestamo").reset();
+    const nuevos = await fetchWithAuth("https://inversiones-api.onrender.com/api/prestamos/");
+    prestamosGlobal = nuevos;
+    renderTablaPrestamos(nuevos);
+  } else {
+    mostrarToast("error", "Error al registrar préstamo");
+  }
+});
+// Enviar formulario pago
+document.getElementById("form-pago").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem("token");
+  const data = {
+    prestamo: document.getElementById("pago-prestamo").value,
+    monto_pagado: document.getElementById("pago-monto").value,
+    fecha: document.getElementById("pago-fecha").value
+  };
+
+  const res = await fetch("https://inversiones-api.onrender.com/api/pagos/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok) {
+    modalPago.classList.add("hidden");
+    document.getElementById("form-pago").reset();
+    await cargarPagosFiltrados();
+    mostrarToast("exito", "Pago registrado con éxito");
+  } else {
+    mostrarToast("error", "Error al registrar el pago");
+  }
+});
+function cargarSelectCobradores() {
+  const select = document.getElementById("prestamo-cobrador");
+  select.innerHTML = '<option value="">Seleccione cobrador</option>';
+  usuariosMap.forEach((nombreCompleto, id) => {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = nombreCompleto;
+    select.appendChild(option);
+  });
 }
