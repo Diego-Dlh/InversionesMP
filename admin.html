@@ -58,12 +58,13 @@
       </div>
     </section>
 
-    <!-- Filtros de deudores -->
-    <section class="px-4 py-6">
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
-        <label
+<section class="px-4 py-6">
+  <div class="mb-6">
+    <h2 class="text-base font-semibold text-gray-900 mb-4">Lista de Deudores</h2>
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
+      <label
           for="buscar-deudor"
-          class="block text-sm font-medium text-gray-700 mb-1"
+          class="block text-sm font-medium text-gray-700 mb-"
           >Buscar deudor:</label
         >
         <input
@@ -72,15 +73,6 @@
           placeholder="Nombre o identificación"
           class="border border-gray-300 rounded-md px-4 py-3 text-base w-full max-w-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
         />
-      </div>
-    </section>
-
-
-<section class="px-4 py-6">
-  <div class="mb-6">
-    <h2 class="text-base font-semibold text-gray-900 mb-4">Lista de Deudores</h2>
-    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
-      <h2 class="text-lg font-semibold text-gray-900 mb-2">Lista de Deudores</h2>
       <!-- Botón para abrir modal -->
 <button id="btn-toggle-modal-deudor"
   class="bg-gray-900 text-white px-5 py-3 rounded shadow hover:bg-gray-800 text-base active:scale-95 transition duration-200 mb-3 w-full sm:w-auto">
@@ -203,12 +195,16 @@
   </div>
 </section>
 
-
-
-    <!-- Filtros de préstamos -->
+    <!-- Tabla de préstamos -->
     <section class="px-4 py-6">
-      <div
-        class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 grid grid-cols-1 md:grid-cols-3 gap-4"
+      
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
+        
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">
+          Lista de Préstamos
+        </h2>
+        <div
+        class="bg-white p-4 grid grid-cols-1 md:grid-cols-3 gap-4"
       >
         <div>
           <label
@@ -253,14 +249,6 @@
           </select>
         </div>
       </div>
-    </section>
-
-    <!-- Tabla de préstamos -->
-    <section class="px-4 py-6">
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">
-          Lista de Préstamos
-        </h2>
         <div class="overflow-x-auto border border-gray-200 rounded w-full block">
           <table class="min-w-[800px] table-auto text-base sm:text-sm border border-gray-200">
             <thead class="bg-gray-100 text-gray-700 font-semibold">
@@ -282,9 +270,13 @@
       </div>
     </section>
 
-    <!-- Filtro de pagos -->
+    <!-- Tabla de pagos -->
     <section class="px-4 py-6">
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 max-w-xs">
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">
+          Pagos
+        </h2>
+        <div class=" p-4 max-w-xs">
         <label for="filtro-mes" class="text-sm font-medium text-gray-700 mb-1"
           >Filtrar pagos por mes:</label
         >
@@ -307,14 +299,6 @@
           <option value="12">Diciembre</option>
         </select>
       </div>
-    </section>
-
-    <!-- Tabla de pagos -->
-    <section class="px-4 py-6">
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">
-          Últimos movimientos
-        </h2>
         <div class="overflow-x-auto border border-gray-200 rounded w-full block">
           <table class="min-w-[700px] table-auto text-base sm:text-sm">
             <thead class="bg-gray-50 text-gray-700 font-semibold">
