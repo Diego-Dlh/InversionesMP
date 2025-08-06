@@ -361,7 +361,6 @@ function mostrarToast(tipo = "exito", mensaje = "") {
 const modalPrestamo = document.getElementById("modal-prestamo");
 document.getElementById("btn-toggle-modal-prestamo").addEventListener("click", () => {
   cargarSelectDeudores();
-  cargarSelectCobradores(); // ✅ nuevo
   modalPrestamo.classList.remove("hidden");
 });
 document.getElementById("cerrar-modal-prestamo").addEventListener("click", () => {
@@ -407,12 +406,14 @@ document.getElementById("form-prestamo").addEventListener("submit", async (e) =>
   const token = localStorage.getItem("token");
 
   const data = {
-    deudor: parseInt(document.getElementById("prestamo-deudor").value),
-    monto: parseInt(document.getElementById("prestamo-monto").value),
-    interes: parseInt(document.getElementById("prestamo-interes").value),
-    meses: parseInt(document.getElementById("prestamo-meses").value),
-    cobrador: parseInt(document.getElementById("prestamo-cobrador").value),
-  };
+  deudor: parseInt(document.getElementById("prestamo-deudor").value),
+  monto: parseInt(document.getElementById("prestamo-monto").value),
+  interes: parseInt(document.getElementById("prestamo-interes").value),
+  meses: parseInt(document.getElementById("prestamo-meses").value),
+  cobrador: "1"
+
+
+};
 
   const res = await fetch("https://inversiones-api.onrender.com/api/prestamos/", {
     method: "POST",
@@ -462,13 +463,3 @@ document.getElementById("form-pago").addEventListener("submit", async (e) => {
     mostrarToast("error", "Error al registrar el pago");
   }
 });
-function cargarSelectCobradores() {
-  const select = document.getElementById("prestamo-cobrador");
-  select.innerHTML = '<option value="">Seleccione cobrador</option>';
-  usuariosMap.forEach((nombreCompleto, id) => {
-    const option = document.createElement("option");
-    option.value = id;
-    option.textContent = nombreCompleto;
-    select.appendChild(option);
-  });
-}
