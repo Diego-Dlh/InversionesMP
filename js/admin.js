@@ -213,8 +213,7 @@ async function cargarPagosFiltrados(mes = "") {
     (sum, p) => sum + parseFloat(p.monto_pagado || 0),
     0
   );
-  document.getElementById("total-recaudado").textContent =
-    totalMes.toLocaleString("es-CO");
+  document.getElementById("total-recaudado").textContent =totalMes.toLocaleString("es-CO");
 }
 function formatearFecha(fechaISO) {
   const fecha = new Date(fechaISO);
@@ -442,7 +441,10 @@ document.getElementById("form-pago").addEventListener("submit", async (e) => {
   const data = {
     prestamo: document.getElementById("pago-prestamo").value,
     monto_pagado: document.getElementById("pago-monto").value,
-    fecha: document.getElementById("pago-fecha").value
+    fecha: //today date in format yyyy-mm-dd
+    new Date().toISOString().split('T')[0]
+
+
   };
 
   const res = await fetch("https://inversiones-api.onrender.com/api/pagos/", {
