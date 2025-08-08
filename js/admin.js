@@ -409,6 +409,8 @@ document.getElementById("form-prestamo").addEventListener("submit", async (e) =>
   monto: parseInt(document.getElementById("prestamo-monto").value),
   interes: parseInt(document.getElementById("prestamo-interes").value),
   meses: parseInt(document.getElementById("prestamo-meses").value),
+  fecha: document.getElementById("prestamo-fecha").value,
+
   cobrador: "1"
 
 
@@ -441,10 +443,7 @@ document.getElementById("form-pago").addEventListener("submit", async (e) => {
   const data = {
     prestamo: document.getElementById("pago-prestamo").value,
     monto_pagado: document.getElementById("pago-monto").value,
-    fecha: //today date in format yyyy-mm-dd
-    new Date().toISOString().split('T')[0]
-
-
+    fecha: document.getElementById("pago-fecha").value
   };
 
   const res = await fetch("https://inversiones-api.onrender.com/api/pagos/", {

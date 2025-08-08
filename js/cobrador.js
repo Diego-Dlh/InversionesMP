@@ -345,9 +345,9 @@ document.getElementById("form-prestamo").addEventListener("submit", async (e) =>
   monto: parseInt(document.getElementById("prestamo-monto").value),
   interes: parseInt(document.getElementById("prestamo-interes").value),
   meses: parseInt(document.getElementById("prestamo-meses").value),
+  fecha: document.getElementById("prestamo-fecha").value,
+
   cobrador: "1"
-
-
 };
 
   const res = await fetch("https://inversiones-api.onrender.com/api/prestamos/", {
