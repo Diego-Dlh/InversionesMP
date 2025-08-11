@@ -241,10 +241,15 @@ function renderTablaDeudores(deudores) {
   tbody.innerHTML = '';
 
   deudores.forEach(d => {
+    let nombreCompleto = d.nombre;
+    if (d.apellido) {
+      nombreCompleto += ` ${d.apellido}`;
+    }
+
     const fila = document.createElement('tr');
     const tipo = d.tipo == '1' ? 'normal' : (d.tipo == '2' ? 'especial' : '');
     fila.innerHTML = `
-      <td class="p-2">${escapeHTML(d.nombre)}</td>
+      <td class="p-2">${escapeHTML(nombreCompleto)}</td>
       <td class="p-2">${escapeHTML(d.id)}</td>
       <td class="p-2">${escapeHTML(d.telefono)}</td>
       <td class="p-2">${escapeHTML(d.direccion)}</td>
@@ -318,9 +323,14 @@ function renderTablaCobradores(cobradores) {
   tbody.innerHTML = '';
 
   cobradores.forEach(c => {
+    let nombreCompleto = c.nombre;
+    if (c.apellido) {
+      nombreCompleto += ` ${c.apellido}`;
+    }
+
     const fila = document.createElement('tr');
     fila.innerHTML = `
-      <td class="p-2">${escapeHTML(c.nombre)} ${escapeHTML(c.apellido)}</td>
+      <td class="p-2">${escapeHTML(nombreCompleto)}</td>
       <td class="p-2">${escapeHTML(c.identificacion)}</td>
       <td class="p-2">${escapeHTML(c.telefono)}</td>
       <td class="p-2 w-28">
