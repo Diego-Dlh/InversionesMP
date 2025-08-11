@@ -94,12 +94,15 @@ let usuariosMap = new Map();
 
 let deudoresGlobal = [];
 let prestamosGlobal = [];
-let usuariosGlobal = []; // NUEVO: para refrescar cobradores/filtros al eliminar
+let usuariosGlobal = []; // para refrescar cobradores/filtros al eliminar
+let pendingDelete = null; // { tipo: 'deudor' | 'cobrador', id: string|number }
 
 /* ============================================================================
  * Bootstrap
  * ==========================================================================*/
 document.addEventListener('DOMContentLoaded', async () => {
+  ensureConfirmUI(); // inyecta modal confirm si no existe
+
   const rol = localStorage.getItem('rol');
   if (rol !== '1') {
     mostrarToast('error', 'Acceso no autorizado');
@@ -214,6 +217,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     modalPago?.classList.add('hidden');
     byId(SELECTORS.formPago)?.reset();
   });
+
+  // Modal Confirmación (Eliminar)
+  byId('mp-confirm-cancel')?.addEventListener('click', () => {
+    pendingDelete = null;
+    hideConfirmModal();
+  });
+  byId('mp-confirm-ok')?.addEventListener('click', () => {
+    if (!pendingDelete) return;
+    const { tipo, id } = pendingDelete;
+    pendingDelete = null;
+    hideConfirmModal();
+    handleDelete(tipo, id);
+  });
 });
 
 /* ============================================================================
@@ -234,7 +250,7 @@ function renderTablaDeudores(deudores) {
       <td class="p-2">${escapeHTML(d.direccion)}</td>
       <td class="p-2">${tipo}</td>
       <td class="p-2 w-28">
-        <button class="btn-xs btn-danger"
+        <button class="inline-flex items-center justify-center rounded-lg border border-red-500 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-600 hover:text-white transition"
                 data-action="delete"
                 data-type="deudor"
                 data-id="${String(d.id)}"
@@ -308,7 +324,7 @@ function renderTablaCobradores(cobradores) {
       <td class="p-2">${escapeHTML(c.identificacion)}</td>
       <td class="p-2">${escapeHTML(c.telefono)}</td>
       <td class="p-2 w-28">
-        <button class="btn-xs btn-danger"
+        <button class="inline-flex items-center justify-center rounded-lg border border-red-500 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-600 hover:text-white transition"
                 data-action="delete"
                 data-type="cobrador"
                 data-id="${String(c.id)}"
@@ -454,7 +470,7 @@ byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
 function cargarSelectDeudores() {
   const select = byId(SELECTORS.selectPrestamoDeudor);
   if (!select) return;
-  select.innerHTML = '<option value=\"\">Seleccionar Deudor</option>';
+  select.innerHTML = '<option value="">Seleccionar Deudor</option>';
   deudoresGlobal.forEach(d => {
     const option = document.createElement('option');
     option.value = d.id;
@@ -467,7 +483,7 @@ function cargarSelectDeudores() {
 function cargarSelectPrestamos() {
   const select = byId(SELECTORS.selectPagoPrestamo);
   if (!select) return;
-  select.innerHTML = '<option value=\"\">Seleccionar Préstamo</option>';
+  select.innerHTML = '<option value="">Seleccionar Préstamo</option>';
   prestamosGlobal.forEach(p => {
     const nombre = deudoresMap.get(String(p.deudor)) || `ID: ${p.deudor}`;
     const option = document.createElement('option');
@@ -543,7 +559,7 @@ byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
 });
 
 /* ============================================================================
- * Eliminar (delegación + DELETE)
+ * Eliminar (delegación + modal confirmación)
  * ==========================================================================*/
 function onActionClick(e) {
   const btn = e.target.closest('button[data-action="delete"]');
@@ -551,11 +567,19 @@ function onActionClick(e) {
 
   const id = btn.dataset.id;
   const tipo = btn.dataset.type; // 'deudor' | 'cobrador'
-  const label = tipo === 'deudor' ? 'deudor' : 'cobrador';
+  showConfirmModal(tipo, id, btn.getAttribute('aria-label') || '');
+}
 
-  if (!confirm(`¿Seguro que deseas eliminar el ${label} ${id}? Esta acción no se puede deshacer.`)) return;
+function showConfirmModal(tipo, id, label) {
+  pendingDelete = { tipo, id };
+  const overlay = byId('mp-confirm-overlay');
+  const msg = byId('mp-confirm-message');
+  if (msg) msg.textContent = label || `¿Eliminar ${tipo} ${id}?`;
+  overlay?.classList.remove('hidden');
+}
 
-  handleDelete(tipo, id);
+function hideConfirmModal() {
+  byId('mp-confirm-overlay')?.classList.add('hidden');
 }
 
 async function handleDelete(tipo, id) {
@@ -572,10 +596,8 @@ async function handleDelete(tipo, id) {
 
     if (res.ok) {
       if (tipo === 'deudor') {
-        // Estado
         deudoresGlobal = deudoresGlobal.filter(d => String(d.id) !== String(id));
         deudoresMap.delete(String(id));
-        // UI
         setText(SELECTORS.deudoresCount, deudoresGlobal.length);
         renderTablaDeudores(deudoresGlobal);
       } else {
@@ -604,7 +626,7 @@ async function handleDelete(tipo, id) {
 function cargarOpcionesCobradores(usuarios) {
   const select = byId(SELECTORS.selectDeudorCobrador);
   if (!select) return;
-  select.innerHTML = '<option value=\"\">Seleccionar Cobrador</option>';
+  select.innerHTML = '<option value="">Seleccionar Cobrador</option>';
   usuarios
     .filter(u => u.rol === 2)
     .forEach(c => {
@@ -618,7 +640,7 @@ function cargarOpcionesCobradores(usuarios) {
 function poblarFiltroCobrador(usuarios) {
   const select = byId(SELECTORS.filtroCobrador);
   if (!select) return;
-  select.innerHTML = '<option value=\"\">Todos</option>';
+  select.innerHTML = '<option value="">Todos</option>';
   usuarios.forEach(u => {
     const opt = document.createElement('option');
     opt.value = u.id;
@@ -647,4 +669,26 @@ function escapeHTML(v) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+}
+
+/* ============================================================================
+ * Confirm UI (inyectado dinámicamente)
+ * ==========================================================================*/
+function ensureConfirmUI() {
+  if (byId('mp-confirm-overlay')) return;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'mp-confirm-overlay';
+  wrap.className = 'fixed inset-0 z-[100] hidden bg-black/50 backdrop-blur-sm';
+  wrap.innerHTML = `
+    <div class="mx-auto mt-28 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-xl">
+      <h3 class="text-lg font-semibold mb-2">Confirmar eliminación</h3>
+      <p id="mp-confirm-message" class="text-sm text-gray-600">¿Eliminar?</p>
+      <div class="mt-6 flex justify-end gap-2">
+        <button id="mp-confirm-cancel" class="rounded-xl border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">Cancelar</button>
+        <button id="mp-confirm-ok" class="rounded-xl bg-black px-4 py-2 text-white hover:bg-gray-900">Eliminar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
 }
