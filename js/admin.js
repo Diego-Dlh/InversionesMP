@@ -1,80 +1,104 @@
 'use strict';
 
-// ============================================================================
-// Imports
-// ============================================================================
+/* ============================================================================
+ * Imports
+ * ==========================================================================*/
 import { fetchWithAuth } from './api.js';
 
-// ============================================================================
-// Constantes / Configuración
-// ============================================================================
+/* ============================================================================
+ * Config / Selectores
+ * ==========================================================================*/
 const API_BASE = 'https://inversiones-api.onrender.com/api';
 const SELECTORS = {
+  // acciones generales
   logoutBtn: 'logout-btn',
+
+  // filtros / búsquedas
   filtroMes: 'filtro-mes',
   buscarDeudor: 'buscar-deudor',
   buscarPrestamo: 'buscar-prestamo',
   filtroEstado: 'filtro-estado',
   filtroCobrador: 'filtro-cobrador',
+
+  // modales + forms
   modalCobrador: 'modal-cobrador',
   btnToggleModalCobrador: 'btn-toggle-modal',
   btnCloseModalCobrador: 'btn-close-modal',
   formCobrador: 'form-cobrador',
+
   modalDeudor: 'modal-deudor',
   btnToggleModalDeudor: 'btn-toggle-modal-deudor',
   btnCloseModalDeudor: 'btn-close-modal-deudor',
   formDeudor: 'form-deudor',
+
   modalPrestamo: 'modal-prestamo',
   btnToggleModalPrestamo: 'btn-toggle-modal-prestamo',
   btnCloseModalPrestamo: 'cerrar-modal-prestamo',
   formPrestamo: 'form-prestamo',
+
   modalPago: 'modal-pago',
   btnToggleModalPago: 'btn-toggle-modal-pago',
   btnCloseModalPago: 'btn-close-modal-pago',
   formPago: 'form-pago',
+
+  // tablas
   tablaDeudores: 'tabla-deudores-container',
   tablaPrestamos: 'tabla-prestamos-container',
   tablaPagos: 'tabla-pagos-container',
   tablaCobradores: 'tabla-cobradores-container',
+
+  // resumen
   deudoresCount: 'deudores-count',
   prestamosCount: 'prestamos-count',
   pagosCount: 'pagos-count',
   usuariosCount: 'usuarios-count',
   totalRecaudado: 'total-recaudado',
+
+  // toasts
   toastError: 'toast-error',
   toastExito: 'toast-exito',
+
+  // préstamo (selects/inputs)
   selectPrestamoDeudor: 'prestamo-deudor',
   inputPrestamoMonto: 'prestamo-monto',
   inputPrestamoInteres: 'prestamo-interes',
   inputPrestamoMeses: 'prestamo-meses',
   inputPrestamoFecha: 'prestamo-fecha',
+
+  // pago
   selectPagoPrestamo: 'pago-prestamo',
   inputPagoMonto: 'pago-monto',
   inputPagoFecha: 'pago-fecha',
+
+  // deudor modal
   selectDeudorCobrador: 'deudor-cobrador',
-  nuevoNombre: 'nuevo-nombre',
-  nuevoApellido: 'nuevo-apellido',
-  nuevoIdentificacion: 'nuevo-identificacion',
-  nuevoTelefono: 'nuevo-telefono',
   deudorNombre: 'deudor-nombre',
   deudorApellido: 'deudor-apellido',
   deudorIdentificacion: 'deudor-identificacion',
   deudorTelefono: 'deudor-telefono',
   deudorDireccion: 'deudor-direccion',
-  deudorTipo: 'deudor-tipo'
+  deudorTipo: 'deudor-tipo',
+
+  // cobrador modal
+  nuevoNombre: 'nuevo-nombre',
+  nuevoApellido: 'nuevo-apellido',
+  nuevoIdentificacion: 'nuevo-identificacion',
+  nuevoTelefono: 'nuevo-telefono'
 };
 
-// ============================================================================
-// Estado (Maps y arreglos globales)
-// ============================================================================
+/* ============================================================================
+ * Estado global
+ * ==========================================================================*/
 let deudoresMap = new Map();
 let usuariosMap = new Map();
+
 let deudoresGlobal = [];
 let prestamosGlobal = [];
+let usuariosGlobal = []; // NUEVO: para refrescar cobradores/filtros al eliminar
 
-// ============================================================================
-// Bootstrap principal
-// ============================================================================
+/* ============================================================================
+ * Bootstrap
+ * ==========================================================================*/
 document.addEventListener('DOMContentLoaded', async () => {
   const rol = localStorage.getItem('rol');
   if (rol !== '1') {
@@ -91,165 +115,222 @@ document.addEventListener('DOMContentLoaded', async () => {
       fetchWithAuth(`${API_BASE}/pagos`)
     ]);
 
-    renderTablaCobradores(usuarios);
-    cargarOpcionesCobradores(usuarios);
-
+    // estado
     deudoresGlobal = deudores;
     prestamosGlobal = prestamos;
+    usuariosGlobal = usuarios;
 
-    deudores.forEach((d) => {
-      deudoresMap.set(d.id, `${d.nombre} ${d.apellido}`);
-    });
+    // maps
+    deudores.forEach(d => deudoresMap.set(String(d.id), `${d.nombre} ${d.apellido}`));
+    usuarios.forEach(u => usuariosMap.set(String(u.id), `${u.nombre} ${u.apellido}`));
 
-    usuarios.forEach((u) => {
-      usuariosMap.set(u.id, `${u.nombre} ${u.apellido}`);
-      const option = document.createElement('option');
-      option.value = u.id;
-      option.textContent = `${u.nombre} ${u.apellido}`;
-      document.getElementById(SELECTORS.filtroCobrador).appendChild(option);
-    });
+    // resumen
+    setText(SELECTORS.deudoresCount, deudores.length);
+    setText(SELECTORS.prestamosCount, prestamos.length);
+    setText(SELECTORS.pagosCount, pagos.length);
+    setText(SELECTORS.usuariosCount, usuarios.length);
 
-    document.getElementById(SELECTORS.deudoresCount).textContent = deudores.length;
-    document.getElementById(SELECTORS.prestamosCount).textContent = prestamos.length;
-    document.getElementById(SELECTORS.pagosCount).textContent = pagos.length;
-    document.getElementById(SELECTORS.usuariosCount).textContent = usuarios.length;
+    // render inicial
+    renderTablaDeudores(deudoresGlobal);
+    renderTablaPrestamos(prestamosGlobal);
+    renderTablaCobradores(usuariosGlobal);
+    cargarOpcionesCobradores(usuariosGlobal);
+    poblarFiltroCobrador(usuariosGlobal);
 
-    renderTablaDeudores(deudores);
-    renderTablaPrestamos(prestamos);
     await cargarPagosFiltrados();
-  } catch (error) {
+  } catch (err) {
+    console.error(err);
     mostrarToast('error', 'Error cargando datos');
-    console.error(error);
   }
 
-  // ----------------------
-  // Eventos generales
-  // ----------------------
-  document.getElementById(SELECTORS.logoutBtn).addEventListener('click', () => {
+  /* -------------------------
+   * Eventos globales
+   * -----------------------*/
+  byId(SELECTORS.logoutBtn)?.addEventListener('click', () => {
     localStorage.removeItem('token');
     localStorage.removeItem('rol');
     window.location.href = 'index.html';
   });
 
-  document.getElementById(SELECTORS.filtroMes).addEventListener('change', async (e) => {
-    const mesSeleccionado = e.target.value;
-    await cargarPagosFiltrados(mesSeleccionado);
+  byId(SELECTORS.filtroMes)?.addEventListener('change', async (e) => {
+    await cargarPagosFiltrados(e.target.value);
   });
 
-  document.getElementById(SELECTORS.buscarDeudor).addEventListener('input', () => {
-    const texto = document.getElementById(SELECTORS.buscarDeudor).value.toLowerCase();
-
-    const filtrados = deudoresGlobal.filter((d) => {
-      const nombre = d.nombre?.toLowerCase() || '';
-      const identificacion = d.identificacion?.toLowerCase?.() || '';
-      return nombre.includes(texto) || identificacion.includes(texto);
+  byId(SELECTORS.buscarDeudor)?.addEventListener('input', () => {
+    const q = byId(SELECTORS.buscarDeudor).value.toLowerCase();
+    const filtrados = deudoresGlobal.filter(d => {
+      const nombre = (d.nombre || '').toLowerCase();
+      const identificacion = (d.identificacion || d.id || '').toString().toLowerCase();
+      return nombre.includes(q) || identificacion.includes(q);
     });
-
     renderTablaDeudores(filtrados);
   });
 
-  document.getElementById(SELECTORS.buscarPrestamo).addEventListener('input', aplicarFiltrosPrestamos);
-  document.getElementById(SELECTORS.filtroEstado).addEventListener('change', aplicarFiltrosPrestamos);
-  document.getElementById(SELECTORS.filtroCobrador).addEventListener('change', aplicarFiltrosPrestamos);
+  byId(SELECTORS.buscarPrestamo)?.addEventListener('input', aplicarFiltrosPrestamos);
+  byId(SELECTORS.filtroEstado)?.addEventListener('change', aplicarFiltrosPrestamos);
+  byId(SELECTORS.filtroCobrador)?.addEventListener('change', aplicarFiltrosPrestamos);
 
-  // ----------------------
-  // Modal Cobrador
-  // ----------------------
-  const modalCobrador = document.getElementById(SELECTORS.modalCobrador);
-  document.getElementById(SELECTORS.btnToggleModalCobrador).addEventListener('click', () => {
-    modalCobrador.classList.remove('hidden');
+  // Delegación: Eliminar (deudores y cobradores)
+  byId(SELECTORS.tablaDeudores)?.addEventListener('click', onActionClick);
+  byId(SELECTORS.tablaCobradores)?.addEventListener('click', onActionClick);
+
+  /* -------------------------
+   * Modales: abrir/cerrar
+   * -----------------------*/
+  const modalCobrador = byId(SELECTORS.modalCobrador);
+  byId(SELECTORS.btnToggleModalCobrador)?.addEventListener('click', () => {
+    modalCobrador?.classList.remove('hidden');
   });
-  document.getElementById(SELECTORS.btnCloseModalCobrador).addEventListener('click', () => {
-    modalCobrador.classList.add('hidden');
-    document.getElementById(SELECTORS.formCobrador).reset();
+  byId(SELECTORS.btnCloseModalCobrador)?.addEventListener('click', () => {
+    modalCobrador?.classList.add('hidden');
+    byId(SELECTORS.formCobrador)?.reset();
   });
 
-  // ----------------------
-  // Modal Deudor (apertura/cierre)
-  // ----------------------
-  const modalDeudorLocal = document.getElementById(SELECTORS.modalDeudor);
-  document.getElementById(SELECTORS.btnToggleModalDeudor).addEventListener('click', () => {
-    modalDeudorLocal.classList.remove('hidden');
+  const modalDeudor = byId(SELECTORS.modalDeudor);
+  byId(SELECTORS.btnToggleModalDeudor)?.addEventListener('click', () => {
+    modalDeudor?.classList.remove('hidden');
   });
-  document.getElementById(SELECTORS.btnCloseModalDeudor).addEventListener('click', () => {
-    modalDeudorLocal.classList.add('hidden');
-    document.getElementById(SELECTORS.formDeudor).reset();
+  byId(SELECTORS.btnCloseModalDeudor)?.addEventListener('click', () => {
+    modalDeudor?.classList.add('hidden');
+    byId(SELECTORS.formDeudor)?.reset();
+  });
+
+  const modalPrestamo = byId(SELECTORS.modalPrestamo);
+  byId(SELECTORS.btnToggleModalPrestamo)?.addEventListener('click', () => {
+    cargarSelectDeudores();
+    modalPrestamo?.classList.remove('hidden');
+  });
+  byId(SELECTORS.btnCloseModalPrestamo)?.addEventListener('click', () => {
+    modalPrestamo?.classList.add('hidden');
+    byId(SELECTORS.formPrestamo)?.reset();
+  });
+
+  const modalPago = byId(SELECTORS.modalPago);
+  byId(SELECTORS.btnToggleModalPago)?.addEventListener('click', () => {
+    cargarSelectPrestamos();
+    modalPago?.classList.remove('hidden');
+  });
+  byId(SELECTORS.btnCloseModalPago)?.addEventListener('click', () => {
+    modalPago?.classList.add('hidden');
+    byId(SELECTORS.formPago)?.reset();
   });
 });
 
-// ============================================================================
-// Renderizadores (SIN cambios de lógica)
-// ============================================================================
+/* ============================================================================
+ * Renderizadores
+ * ==========================================================================*/
 function renderTablaDeudores(deudores) {
-  const tbody = document.getElementById(SELECTORS.tablaDeudores);
+  const tbody = byId(SELECTORS.tablaDeudores);
+  if (!tbody) return;
   tbody.innerHTML = '';
 
-  deudores.forEach((d) => {
+  deudores.forEach(d => {
     const fila = document.createElement('tr');
-    let tipo = '';
-    if (d.tipo == '1') {
-      tipo = 'normal';
-    } else if (d.tipo == '2') {
-      tipo = 'especial';
-    }
-    let nombrecompleto = `${d.nombre} ${d.apellido}`
-
+    const tipo = d.tipo == '1' ? 'normal' : (d.tipo == '2' ? 'especial' : '');
     fila.innerHTML = `
-      <td class="p-2">${nombrecompleto}</td>
-      <td class="p-2">${d.id}</td>
-      <td class="p-2">${d.telefono}</td>
-      <td class="p-2">${d.direccion}</td>
+      <td class="p-2">${escapeHTML(d.nombre)}</td>
+      <td class="p-2">${escapeHTML(d.id)}</td>
+      <td class="p-2">${escapeHTML(d.telefono)}</td>
+      <td class="p-2">${escapeHTML(d.direccion)}</td>
       <td class="p-2">${tipo}</td>
+      <td class="p-2 w-28">
+        <button class="btn-xs btn-danger"
+                data-action="delete"
+                data-type="deudor"
+                data-id="${String(d.id)}"
+                aria-label="Eliminar deudor ${escapeHTML(d.nombre)}">
+          Eliminar
+        </button>
+      </td>
     `;
     tbody.appendChild(fila);
   });
 }
 
 function renderTablaPrestamos(prestamos) {
-  const tbody = document.getElementById(SELECTORS.tablaPrestamos);
+  const tbody = byId(SELECTORS.tablaPrestamos);
+  if (!tbody) return;
   tbody.innerHTML = '';
 
-  prestamos.forEach((p) => {
-    const nombreDeudor = deudoresMap.get(p.deudor) || `ID: ${p.deudor}`;
-    const nombreCobrador = usuariosMap.get(p.cobrador) || `ID: ${p.cobrador}`;
-    let estadoTexto = '';
-    let estadoClase = '';
+  prestamos.forEach(p => {
+    const nombreDeudor = deudoresMap.get(String(p.deudor)) || `ID: ${p.deudor}`;
+    const nombreCobrador = usuariosMap.get(String(p.cobrador)) || `ID: ${p.cobrador}`;
 
-    if (p.estado === 1) {
-      estadoTexto = 'Pendiente';
-      estadoClase = 'text-yellow-600 font-semibold';
-    } else if (p.estado === 2) {
-      estadoTexto = 'Pagado';
-      estadoClase = 'text-green-600 font-semibold';
-    } else if (p.estado === 3) {
-      estadoTexto = 'En mora';
-      estadoClase = 'text-red-600 font-semibold';
-    } else {
-      estadoTexto = 'Desconocido';
-      estadoClase = 'text-gray-500';
-    }
+    let estadoTexto = 'Desconocido';
+    let estadoClase = 'text-gray-500';
+    if (p.estado === 1) { estadoTexto = 'Pendiente'; estadoClase = 'text-yellow-600 font-semibold'; }
+    else if (p.estado === 2) { estadoTexto = 'Pagado'; estadoClase = 'text-green-600 font-semibold'; }
+    else if (p.estado === 3) { estadoTexto = 'En mora'; estadoClase = 'text-red-600 font-semibold'; }
 
     const fila = document.createElement('tr');
     fila.innerHTML = `
-      <td class="p-2">${nombreDeudor}</td>
+      <td class="p-2">${escapeHTML(nombreDeudor)}</td>
       <td class="p-2">${Number(p.monto).toLocaleString('es-CO')}</td>
       <td class="p-2">${Number(p.saldo_pendiente).toLocaleString('es-CO')}</td>
       <td class="p-2">${p.meses}</td>
       <td class="p-2">${formatearFecha(p.fecha)}</td>
       <td class="p-2"><span class="${estadoClase}">${estadoTexto}</span></td>
-      <td class="p-2">${nombreCobrador}</td>
+      <td class="p-2">${escapeHTML(nombreCobrador)}</td>
     `;
     tbody.appendChild(fila);
   });
 }
 
-function aplicarFiltrosPrestamos() {
-  const texto = document.getElementById(SELECTORS.buscarPrestamo).value.toLowerCase();
-  const estado = document.getElementById(SELECTORS.filtroEstado).value;
-  const cobrador = document.getElementById(SELECTORS.filtroCobrador).value;
+function renderTablaPagos(pagos) {
+  const tbody = byId(SELECTORS.tablaPagos);
+  if (!tbody) return;
+  tbody.innerHTML = '';
 
-  const filtrados = prestamosGlobal.filter((p) => {
-    const nombreDeudor = (deudoresMap.get(p.deudor) || '').toLowerCase();
+  pagos.forEach(p => {
+    const nombreDeudor = getNombreDeudorDesdePago(p);
+    const nombreCobrador = getNombreCobradorDesdePago(p);
+
+    const fila = document.createElement('tr');
+    fila.innerHTML = `
+      <td class="p-2">${escapeHTML(nombreDeudor)}</td>
+      <td class="p-2">${escapeHTML(nombreCobrador)}</td>
+      <td class="p-2">${Number(p.monto_pagado).toLocaleString('es-CO')}</td>
+      <td class="p-2">${formatearFecha(p.fecha)}</td>
+    `;
+    tbody.appendChild(fila);
+  });
+}
+
+function renderTablaCobradores(cobradores) {
+  const tbody = byId(SELECTORS.tablaCobradores);
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  cobradores.forEach(c => {
+    const fila = document.createElement('tr');
+    fila.innerHTML = `
+      <td class="p-2">${escapeHTML(c.nombre)} ${escapeHTML(c.apellido)}</td>
+      <td class="p-2">${escapeHTML(c.identificacion)}</td>
+      <td class="p-2">${escapeHTML(c.telefono)}</td>
+      <td class="p-2 w-28">
+        <button class="btn-xs btn-danger"
+                data-action="delete"
+                data-type="cobrador"
+                data-id="${String(c.id)}"
+                aria-label="Eliminar cobrador ${escapeHTML(c.nombre)}">
+          Eliminar
+        </button>
+      </td>
+    `;
+    tbody.appendChild(fila);
+  });
+}
+
+/* ============================================================================
+ * Filtros / Búsqueda
+ * ==========================================================================*/
+function aplicarFiltrosPrestamos() {
+  const texto = (byId(SELECTORS.buscarPrestamo)?.value || '').toLowerCase();
+  const estado = byId(SELECTORS.filtroEstado)?.value || '';
+  const cobrador = byId(SELECTORS.filtroCobrador)?.value || '';
+
+  const filtrados = prestamosGlobal.filter(p => {
+    const nombreDeudor = (deudoresMap.get(String(p.deudor)) || '').toLowerCase();
     const coincideNombre = nombreDeudor.includes(texto);
     const coincideEstado = !estado || String(p.estado) === estado;
     const coincideCobrador = !cobrador || String(p.cobrador) === cobrador;
@@ -259,101 +340,54 @@ function aplicarFiltrosPrestamos() {
   renderTablaPrestamos(filtrados);
 }
 
-function renderTablaPagos(pagos) {
-  const tbody = document.getElementById(SELECTORS.tablaPagos);
-  tbody.innerHTML = '';
-
-  pagos.forEach((p) => {
-    const nombreDeudor = getNombreDeudorDesdePago(p);
-    const nombreCobrador = getNombreCobradorDesdePago(p);
-
-    const fila = document.createElement('tr');
-    fila.innerHTML = `
-      <td class="p-2">${nombreDeudor}</td>
-      <td class="p-2">${nombreCobrador}</td>
-      <td class="p-2">${Number(p.monto_pagado).toLocaleString('es-CO')}</td>
-      <td class="p-2">${formatearFecha(p.fecha)}</td>
-    `;
-    tbody.appendChild(fila);
-  });
-}
-
-// ============================================================================
-// Data fetching / cálculos
-// ============================================================================
+/* ============================================================================
+ * Fetch / Cálculos
+ * ==========================================================================*/
 async function cargarPagosFiltrados(mes = '') {
-  // If no month specified, get current month
-  const currentDate = new Date();
-  const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-  
-  // Use current month if no month specified
-  const monthToUse = mes || currentMonth;
-  const url = `${API_BASE}/pagos/?mes=${monthToUse}`;
-  
+  const url = mes ? `${API_BASE}/pagos/?mes=${mes}` : `${API_BASE}/pagos/`;
   const pagos = await fetchWithAuth(url);
   renderTablaPagos(pagos);
 
   const totalMes = pagos.reduce((sum, p) => sum + parseFloat(p.monto_pagado || 0), 0);
-  document.getElementById(SELECTORS.totalRecaudado).textContent = totalMes.toLocaleString('es-CO');
+  setText(SELECTORS.totalRecaudado, totalMes.toLocaleString('es-CO'));
 }
 
 function formatearFecha(fechaISO) {
   const fecha = new Date(fechaISO);
   return fecha.toLocaleString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
   });
 }
 
 function getNombreDeudorDesdePago(pago) {
-  const prestamo = prestamosGlobal.find((pr) => pr.id === pago.prestamo);
+  const prestamo = prestamosGlobal.find(pr => pr.id === pago.prestamo);
   if (!prestamo) return 'Prestamo no encontrado';
-
-  const deudor = deudoresGlobal.find((d) => d.id === prestamo.deudor);
+  const deudor = deudoresGlobal.find(d => d.id === prestamo.deudor);
   return deudor ? `${deudor.nombre} ${deudor.apellido}` : 'Deudor no encontrado';
 }
 
 function getNombreCobradorDesdePago(pago) {
-  const prestamo = prestamosGlobal.find((pr) => pr.id === pago.prestamo);
+  const prestamo = prestamosGlobal.find(pr => pr.id === pago.prestamo);
   if (!prestamo) return 'Préstamo no encontrado';
-
-  const cobrador = usuariosMap.get(prestamo.cobrador);
+  const cobrador = usuariosMap.get(String(prestamo.cobrador));
   return cobrador || 'Cobrador no encontrado';
 }
 
-function renderTablaCobradores(cobradores) {
-  const tbody = document.getElementById(SELECTORS.tablaCobradores);
-  tbody.innerHTML = '';
-
-  cobradores.forEach((c) => {
-    const fila = document.createElement('tr');
-    fila.innerHTML = `
-      <td class="p-2">${c.nombre} ${c.apellido}</td>
-      <td class="p-2">${c.identificacion}</td>
-      <td class="p-2">${c.telefono}</td>
-    `;
-    tbody.appendChild(fila);
-  });
-}
-
-// ============================================================================
-// Formularios (listeners fuera de DOMContentLoaded, manteniendo comportamiento)
-// ============================================================================
-document.getElementById(SELECTORS.formCobrador).addEventListener('submit', async (e) => {
+/* ============================================================================
+ * Formularios
+ * ==========================================================================*/
+// Cobrador: crear
+byId(SELECTORS.formCobrador)?.addEventListener('submit', async (e) => {
   e.preventDefault();
-
   const data = {
-    nombre: document.getElementById(SELECTORS.nuevoNombre).value,
-    apellido: document.getElementById(SELECTORS.nuevoApellido).value,
-    identificacion: document.getElementById(SELECTORS.nuevoIdentificacion).value,
-    telefono: document.getElementById(SELECTORS.nuevoTelefono).value,
+    nombre: byId(SELECTORS.nuevoNombre).value,
+    apellido: byId(SELECTORS.nuevoApellido).value,
+    identificacion: byId(SELECTORS.nuevoIdentificacion).value,
+    telefono: byId(SELECTORS.nuevoTelefono).value,
     contraseña: '123456789',
     rol: 2
   };
-
   const token = localStorage.getItem('token');
 
   const res = await fetch(`${API_BASE}/usuarios/`, {
@@ -373,21 +407,19 @@ document.getElementById(SELECTORS.formCobrador).addEventListener('submit', async
   }
 });
 
-// Definir fuera del submit para asegurar que esté disponible
-const modalDeudor = document.getElementById(SELECTORS.modalDeudor);
-document.getElementById(SELECTORS.formDeudor).addEventListener('submit', async (e) => {
+// Deudor: crear
+byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const data = {
-    nombre: document.getElementById(SELECTORS.deudorNombre).value,
-    apellido: document.getElementById(SELECTORS.deudorApellido).value,
-    id: document.getElementById(SELECTORS.deudorIdentificacion).value,
-    telefono: document.getElementById(SELECTORS.deudorTelefono).value,
-    direccion: document.getElementById(SELECTORS.deudorDireccion).value,
-    tipo: document.getElementById(SELECTORS.deudorTipo).value,
-    cobrador_id: document.getElementById(SELECTORS.selectDeudorCobrador).value
+    nombre: byId(SELECTORS.deudorNombre).value,
+    apellido: byId(SELECTORS.deudorApellido).value,
+    id: byId(SELECTORS.deudorIdentificacion).value,
+    telefono: byId(SELECTORS.deudorTelefono).value,
+    direccion: byId(SELECTORS.deudorDireccion).value,
+    tipo: byId(SELECTORS.deudorTipo).value,
+    cobrador_id: byId(SELECTORS.selectDeudorCobrador).value
   };
-
   const token = localStorage.getItem('token');
 
   const res = await fetch(`${API_BASE}/deudores/`, {
@@ -400,81 +432,30 @@ document.getElementById(SELECTORS.formDeudor).addEventListener('submit', async (
   });
 
   if (res.ok) {
-    modalDeudor.classList.add('hidden');
-    document.getElementById(SELECTORS.formDeudor).reset();
+    byId(SELECTORS.modalDeudor)?.classList.add('hidden');
+    byId(SELECTORS.formDeudor)?.reset();
 
     const nuevosDeudores = await fetchWithAuth(`${API_BASE}/deudores/`);
     deudoresGlobal = nuevosDeudores;
+
+    // maps y UI
+    deudoresMap = new Map();
+    deudoresGlobal.forEach(d => deudoresMap.set(String(d.id), `${d.nombre} ${d.apellido}`));
+    setText(SELECTORS.deudoresCount, deudoresGlobal.length);
     renderTablaDeudores(nuevosDeudores);
 
-    const toast = document.getElementById(SELECTORS.toastExito);
-    toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 3000);
+    mostrarToast('exito', 'Deudor creado con éxito');
   } else {
     mostrarToast('error', 'Error al crear el deudor');
   }
 });
 
-function cargarOpcionesCobradores(usuarios) {
-  const select = document.getElementById(SELECTORS.selectDeudorCobrador);
-  select.innerHTML = '<option value="">Seleccionar Cobrador</option>';
-  usuarios
-    .filter((u) => u.rol === 2)
-    .forEach((c) => {
-      const option = document.createElement('option');
-      option.value = c.id;
-      option.textContent = `${c.nombre} ${c.apellido}`;
-      select.appendChild(option);
-    });
-}
-
-function mostrarToast(tipo = 'exito', mensaje = '') {
-  const id = tipo === 'error' ? SELECTORS.toastError : SELECTORS.toastExito;
-  const toast = document.getElementById(id);
-
-  if (!toast) return;
-
-  toast.textContent = mensaje || (tipo === 'error' ? 'Ocurrió un error' : 'Acción exitosa');
-  toast.classList.remove('hidden');
-
-  setTimeout(() => {
-    toast.classList.add('hidden');
-  }, 3000);
-}
-
-// ----------------------
-// Modal Préstamo
-// ----------------------
-const modalPrestamo = document.getElementById(SELECTORS.modalPrestamo);
-document.getElementById(SELECTORS.btnToggleModalPrestamo).addEventListener('click', () => {
-  cargarSelectDeudores();
-  modalPrestamo.classList.remove('hidden');
-});
-document.getElementById(SELECTORS.btnCloseModalPrestamo).addEventListener('click', () => {
-  modalPrestamo.classList.add('hidden');
-  document.getElementById(SELECTORS.formPrestamo).reset();
-});
-
-// ----------------------
-// Modal Pago
-// ----------------------
-const modalPago = document.getElementById(SELECTORS.modalPago);
-document.getElementById(SELECTORS.btnToggleModalPago).addEventListener('click', () => {
-  cargarSelectPrestamos();
-  modalPago.classList.remove('hidden');
-});
-document.getElementById(SELECTORS.btnCloseModalPago).addEventListener('click', () => {
-  modalPago.classList.add('hidden');
-  document.getElementById(SELECTORS.formPago).reset();
-});
-
-// ----------------------
-// Selects auxiliares
-// ----------------------
+// Préstamo: abrir select deudores
 function cargarSelectDeudores() {
-  const select = document.getElementById(SELECTORS.selectPrestamoDeudor);
-  select.innerHTML = '<option value="">Seleccionar Deudor</option>';
-  deudoresGlobal.forEach((d) => {
+  const select = byId(SELECTORS.selectPrestamoDeudor);
+  if (!select) return;
+  select.innerHTML = '<option value=\"\">Seleccionar Deudor</option>';
+  deudoresGlobal.forEach(d => {
     const option = document.createElement('option');
     option.value = d.id;
     option.textContent = `${d.nombre} ${d.apellido}`;
@@ -482,31 +463,31 @@ function cargarSelectDeudores() {
   });
 }
 
+// Pago: abrir select préstamos
 function cargarSelectPrestamos() {
-  const select = document.getElementById(SELECTORS.selectPagoPrestamo);
-  select.innerHTML = '<option value="">Seleccionar Préstamo</option>';
-  prestamosGlobal.forEach((p) => {
-    const nombre = deudoresMap.get(p.deudor) || `ID: ${p.deudor}`;
+  const select = byId(SELECTORS.selectPagoPrestamo);
+  if (!select) return;
+  select.innerHTML = '<option value=\"\">Seleccionar Préstamo</option>';
+  prestamosGlobal.forEach(p => {
+    const nombre = deudoresMap.get(String(p.deudor)) || `ID: ${p.deudor}`;
     const option = document.createElement('option');
     option.value = p.id;
-    option.textContent = `${nombre} - $${Number(p.saldo_pendiente).toLocaleString('es-CO')}`;
+    option.textContent = `${nombre} - $${Number(p.monto).toLocaleString('es-CO')}`;
     select.appendChild(option);
   });
 }
 
-// ----------------------
-// Submit Préstamo
-// ----------------------
-document.getElementById(SELECTORS.formPrestamo).addEventListener('submit', async (e) => {
+// Préstamo: submit
+byId(SELECTORS.formPrestamo)?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const token = localStorage.getItem('token');
 
   const data = {
-    deudor: parseInt(document.getElementById(SELECTORS.selectPrestamoDeudor).value),
-    monto: parseInt(document.getElementById(SELECTORS.inputPrestamoMonto).value),
-    interes: parseInt(document.getElementById(SELECTORS.inputPrestamoInteres).value),
-    meses: parseInt(document.getElementById(SELECTORS.inputPrestamoMeses).value),
-    fecha: document.getElementById(SELECTORS.inputPrestamoFecha).value,
+    deudor: parseInt(byId(SELECTORS.selectPrestamoDeudor).value),
+    monto: parseInt(byId(SELECTORS.inputPrestamoMonto).value),
+    interes: parseInt(byId(SELECTORS.inputPrestamoInteres).value),
+    meses: parseInt(byId(SELECTORS.inputPrestamoMeses).value),
+    fecha: byId(SELECTORS.inputPrestamoFecha).value,
     cobrador: '1'
   };
 
@@ -521,8 +502,9 @@ document.getElementById(SELECTORS.formPrestamo).addEventListener('submit', async
 
   if (res.ok) {
     mostrarToast('exito', 'Préstamo registrado');
-    document.getElementById(SELECTORS.modalPrestamo).classList.add('hidden');
-    document.getElementById(SELECTORS.formPrestamo).reset();
+    byId(SELECTORS.modalPrestamo)?.classList.add('hidden');
+    byId(SELECTORS.formPrestamo)?.reset();
+
     const nuevos = await fetchWithAuth(`${API_BASE}/prestamos/`);
     prestamosGlobal = nuevos;
     renderTablaPrestamos(nuevos);
@@ -531,16 +513,14 @@ document.getElementById(SELECTORS.formPrestamo).addEventListener('submit', async
   }
 });
 
-// ----------------------
-// Submit Pago
-// ----------------------
-document.getElementById(SELECTORS.formPago).addEventListener('submit', async (e) => {
+// Pago: submit
+byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const token = localStorage.getItem('token');
   const data = {
-    prestamo: document.getElementById(SELECTORS.selectPagoPrestamo).value,
-    monto_pagado: document.getElementById(SELECTORS.inputPagoMonto).value,
-    fecha: document.getElementById(SELECTORS.inputPagoFecha).value
+    prestamo: byId(SELECTORS.selectPagoPrestamo).value,
+    monto_pagado: byId(SELECTORS.inputPagoMonto).value,
+    fecha: byId(SELECTORS.inputPagoFecha).value
   };
 
   const res = await fetch(`${API_BASE}/pagos/`, {
@@ -553,11 +533,118 @@ document.getElementById(SELECTORS.formPago).addEventListener('submit', async (e)
   });
 
   if (res.ok) {
-    modalPago.classList.add('hidden');
-    document.getElementById(SELECTORS.formPago).reset();
+    byId(SELECTORS.modalPago)?.classList.add('hidden');
+    byId(SELECTORS.formPago)?.reset();
     await cargarPagosFiltrados();
     mostrarToast('exito', 'Pago registrado con éxito');
   } else {
     mostrarToast('error', 'Error al registrar el pago');
   }
 });
+
+/* ============================================================================
+ * Eliminar (delegación + DELETE)
+ * ==========================================================================*/
+function onActionClick(e) {
+  const btn = e.target.closest('button[data-action="delete"]');
+  if (!btn) return;
+
+  const id = btn.dataset.id;
+  const tipo = btn.dataset.type; // 'deudor' | 'cobrador'
+  const label = tipo === 'deudor' ? 'deudor' : 'cobrador';
+
+  if (!confirm(`¿Seguro que deseas eliminar el ${label} ${id}? Esta acción no se puede deshacer.`)) return;
+
+  handleDelete(tipo, id);
+}
+
+async function handleDelete(tipo, id) {
+  const token = localStorage.getItem('token');
+  const endpoint = tipo === 'deudor'
+    ? `${API_BASE}/deudores/${id}/`
+    : `${API_BASE}/usuarios/${id}/`;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      if (tipo === 'deudor') {
+        // Estado
+        deudoresGlobal = deudoresGlobal.filter(d => String(d.id) !== String(id));
+        deudoresMap.delete(String(id));
+        // UI
+        setText(SELECTORS.deudoresCount, deudoresGlobal.length);
+        renderTablaDeudores(deudoresGlobal);
+      } else {
+        usuariosGlobal = usuariosGlobal.filter(u => String(u.id) !== String(id));
+        usuariosMap.delete(String(id));
+        setText(SELECTORS.usuariosCount, usuariosGlobal.length);
+        renderTablaCobradores(usuariosGlobal);
+        poblarFiltroCobrador(usuariosGlobal);
+        cargarOpcionesCobradores(usuariosGlobal);
+      }
+      mostrarToast('exito', 'Eliminado correctamente');
+    } else {
+      let msg = 'No se pudo eliminar. Verifica que no tenga préstamos/pagos asociados.';
+      try { const j = await res.json(); if (j?.detail) msg = j.detail; } catch {}
+      mostrarToast('error', msg);
+    }
+  } catch (err) {
+    console.error(err);
+    mostrarToast('error', 'Error de red al eliminar');
+  }
+}
+
+/* ============================================================================
+ * Utilidades UI
+ * ==========================================================================*/
+function cargarOpcionesCobradores(usuarios) {
+  const select = byId(SELECTORS.selectDeudorCobrador);
+  if (!select) return;
+  select.innerHTML = '<option value=\"\">Seleccionar Cobrador</option>';
+  usuarios
+    .filter(u => u.rol === 2)
+    .forEach(c => {
+      const option = document.createElement('option');
+      option.value = c.id;
+      option.textContent = `${c.nombre} ${c.apellido}`;
+      select.appendChild(option);
+    });
+}
+
+function poblarFiltroCobrador(usuarios) {
+  const select = byId(SELECTORS.filtroCobrador);
+  if (!select) return;
+  select.innerHTML = '<option value=\"\">Todos</option>';
+  usuarios.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u.id;
+    opt.textContent = `${u.nombre} ${u.apellido}`;
+    select.appendChild(opt);
+  });
+}
+
+function mostrarToast(tipo = 'exito', mensaje = '') {
+  const id = tipo === 'error' ? SELECTORS.toastError : SELECTORS.toastExito;
+  const toast = byId(id);
+  if (!toast) return;
+  toast.textContent = mensaje || (tipo === 'error' ? 'Ocurrió un error' : 'Acción exitosa');
+  toast.classList.remove('hidden');
+  setTimeout(() => toast.classList.add('hidden'), 3000);
+}
+
+// helpers
+function byId(id) { return document.getElementById(id); }
+function setText(id, value) { const el = byId(id); if (el) el.textContent = String(value); }
+function escapeHTML(v) {
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
