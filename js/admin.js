@@ -1,27 +1,98 @@
-import { fetchWithAuth } from "./api.js";
+'use strict';
 
+// ============================================================================
+// Imports
+// ============================================================================
+import { fetchWithAuth } from './api.js';
+
+// ============================================================================
+// Constantes / Configuración
+// ============================================================================
+const API_BASE = 'https://inversiones-api.onrender.com/api';
+const SELECTORS = {
+  logoutBtn: 'logout-btn',
+  filtroMes: 'filtro-mes',
+  buscarDeudor: 'buscar-deudor',
+  buscarPrestamo: 'buscar-prestamo',
+  filtroEstado: 'filtro-estado',
+  filtroCobrador: 'filtro-cobrador',
+  modalCobrador: 'modal-cobrador',
+  btnToggleModalCobrador: 'btn-toggle-modal',
+  btnCloseModalCobrador: 'btn-close-modal',
+  formCobrador: 'form-cobrador',
+  modalDeudor: 'modal-deudor',
+  btnToggleModalDeudor: 'btn-toggle-modal-deudor',
+  btnCloseModalDeudor: 'btn-close-modal-deudor',
+  formDeudor: 'form-deudor',
+  modalPrestamo: 'modal-prestamo',
+  btnToggleModalPrestamo: 'btn-toggle-modal-prestamo',
+  btnCloseModalPrestamo: 'cerrar-modal-prestamo',
+  formPrestamo: 'form-prestamo',
+  modalPago: 'modal-pago',
+  btnToggleModalPago: 'btn-toggle-modal-pago',
+  btnCloseModalPago: 'btn-close-modal-pago',
+  formPago: 'form-pago',
+  tablaDeudores: 'tabla-deudores-container',
+  tablaPrestamos: 'tabla-prestamos-container',
+  tablaPagos: 'tabla-pagos-container',
+  tablaCobradores: 'tabla-cobradores-container',
+  deudoresCount: 'deudores-count',
+  prestamosCount: 'prestamos-count',
+  pagosCount: 'pagos-count',
+  usuariosCount: 'usuarios-count',
+  totalRecaudado: 'total-recaudado',
+  toastError: 'toast-error',
+  toastExito: 'toast-exito',
+  selectPrestamoDeudor: 'prestamo-deudor',
+  inputPrestamoMonto: 'prestamo-monto',
+  inputPrestamoInteres: 'prestamo-interes',
+  inputPrestamoMeses: 'prestamo-meses',
+  inputPrestamoFecha: 'prestamo-fecha',
+  selectPagoPrestamo: 'pago-prestamo',
+  inputPagoMonto: 'pago-monto',
+  inputPagoFecha: 'pago-fecha',
+  selectDeudorCobrador: 'deudor-cobrador',
+  nuevoNombre: 'nuevo-nombre',
+  nuevoApellido: 'nuevo-apellido',
+  nuevoIdentificacion: 'nuevo-identificacion',
+  nuevoTelefono: 'nuevo-telefono',
+  deudorNombre: 'deudor-nombre',
+  deudorApellido: 'deudor-apellido',
+  deudorIdentificacion: 'deudor-identificacion',
+  deudorTelefono: 'deudor-telefono',
+  deudorDireccion: 'deudor-direccion',
+  deudorTipo: 'deudor-tipo'
+};
+
+// ============================================================================
+// Estado (Maps y arreglos globales)
+// ============================================================================
 let deudoresMap = new Map();
 let usuariosMap = new Map();
 let deudoresGlobal = [];
 let prestamosGlobal = [];
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const rol = localStorage.getItem("rol");
-  if (rol !== "1") {
-    mostrarToast("error", "Acceso no autorizado");
-    window.location.href = "index.html";
+// ============================================================================
+// Bootstrap principal
+// ============================================================================
+document.addEventListener('DOMContentLoaded', async () => {
+  const rol = localStorage.getItem('rol');
+  if (rol !== '1') {
+    mostrarToast('error', 'Acceso no autorizado');
+    window.location.href = 'index.html';
     return;
   }
 
   try {
-    const deudores = await fetchWithAuth("https://inversiones-api.onrender.com/api/deudores/");
-    const usuarios = await fetchWithAuth("https://inversiones-api.onrender.com/api/usuarios/");
-    const prestamos = await fetchWithAuth("https://inversiones-api.onrender.com/api/prestamos/");
-    const pagos = await fetchWithAuth("https://inversiones-api.onrender.com/api/pagos");
+    const [deudores, usuarios, prestamos, pagos] = await Promise.all([
+      fetchWithAuth(`${API_BASE}/deudores/`),
+      fetchWithAuth(`${API_BASE}/usuarios/`),
+      fetchWithAuth(`${API_BASE}/prestamos/`),
+      fetchWithAuth(`${API_BASE}/pagos`)
+    ]);
 
     renderTablaCobradores(usuarios);
     cargarOpcionesCobradores(usuarios);
-
 
     deudoresGlobal = deudores;
     prestamosGlobal = prestamos;
@@ -32,94 +103,94 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     usuarios.forEach((u) => {
       usuariosMap.set(u.id, `${u.nombre} ${u.apellido}`);
-      const option = document.createElement("option");
+      const option = document.createElement('option');
       option.value = u.id;
       option.textContent = `${u.nombre} ${u.apellido}`;
-      document.getElementById("filtro-cobrador").appendChild(option);
+      document.getElementById(SELECTORS.filtroCobrador).appendChild(option);
     });
 
-    document.getElementById("deudores-count").textContent = deudores.length;
-    document.getElementById("prestamos-count").textContent = prestamos.length;
-    document.getElementById("pagos-count").textContent = pagos.length;
-    document.getElementById("usuarios-count").textContent = usuarios.length;
+    document.getElementById(SELECTORS.deudoresCount).textContent = deudores.length;
+    document.getElementById(SELECTORS.prestamosCount).textContent = prestamos.length;
+    document.getElementById(SELECTORS.pagosCount).textContent = pagos.length;
+    document.getElementById(SELECTORS.usuariosCount).textContent = usuarios.length;
 
-    const total = renderTablaDeudores(deudores);
+    renderTablaDeudores(deudores);
     renderTablaPrestamos(prestamos);
     await cargarPagosFiltrados();
   } catch (error) {
-    mostrarToast("error", "Error cargando datos");
+    mostrarToast('error', 'Error cargando datos');
     console.error(error);
   }
 
-  document.getElementById("logout-btn").addEventListener("click", () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("rol");
-    window.location.href = "index.html";
+  // ----------------------
+  // Eventos generales
+  // ----------------------
+  document.getElementById(SELECTORS.logoutBtn).addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('rol');
+    window.location.href = 'index.html';
   });
 
-  document
-    .getElementById("filtro-mes")
-    .addEventListener("change", async (e) => {
-      const mesSeleccionado = e.target.value;
-      await cargarPagosFiltrados(mesSeleccionado);
-    });
+  document.getElementById(SELECTORS.filtroMes).addEventListener('change', async (e) => {
+    const mesSeleccionado = e.target.value;
+    await cargarPagosFiltrados(mesSeleccionado);
+  });
 
-  document.getElementById("buscar-deudor").addEventListener("input", () => {
-    const texto = document.getElementById("buscar-deudor").value.toLowerCase();
+  document.getElementById(SELECTORS.buscarDeudor).addEventListener('input', () => {
+    const texto = document.getElementById(SELECTORS.buscarDeudor).value.toLowerCase();
 
     const filtrados = deudoresGlobal.filter((d) => {
-      const nombre = d.nombre?.toLowerCase() || "";
-      const identificacion = d.identificacion?.toLowerCase?.() || "";
+      const nombre = d.nombre?.toLowerCase() || '';
+      const identificacion = d.identificacion?.toLowerCase?.() || '';
       return nombre.includes(texto) || identificacion.includes(texto);
     });
 
     renderTablaDeudores(filtrados);
   });
 
-  document
-    .getElementById("buscar-prestamo")
-    .addEventListener("input", aplicarFiltrosPrestamos);
-  document
-    .getElementById("filtro-estado")
-    .addEventListener("change", aplicarFiltrosPrestamos);
-  document
-    .getElementById("filtro-cobrador")
-    .addEventListener("change", aplicarFiltrosPrestamos);
+  document.getElementById(SELECTORS.buscarPrestamo).addEventListener('input', aplicarFiltrosPrestamos);
+  document.getElementById(SELECTORS.filtroEstado).addEventListener('change', aplicarFiltrosPrestamos);
+  document.getElementById(SELECTORS.filtroCobrador).addEventListener('change', aplicarFiltrosPrestamos);
 
-  const modal = document.getElementById("modal-cobrador");
-  document.getElementById("btn-toggle-modal").addEventListener("click", () => {
-    modal.classList.remove("hidden");
+  // ----------------------
+  // Modal Cobrador
+  // ----------------------
+  const modalCobrador = document.getElementById(SELECTORS.modalCobrador);
+  document.getElementById(SELECTORS.btnToggleModalCobrador).addEventListener('click', () => {
+    modalCobrador.classList.remove('hidden');
   });
-  document.getElementById("btn-close-modal").addEventListener("click", () => {
-    modal.classList.add("hidden");
-    document.getElementById("form-cobrador").reset(); // limpia el formulario
+  document.getElementById(SELECTORS.btnCloseModalCobrador).addEventListener('click', () => {
+    modalCobrador.classList.add('hidden');
+    document.getElementById(SELECTORS.formCobrador).reset();
   });
 
-  // Modal de deudor
-const modalDeudor = document.getElementById("modal-deudor");
-
-document.getElementById("btn-toggle-modal-deudor").addEventListener("click", () => {
-  modalDeudor.classList.remove("hidden");
+  // ----------------------
+  // Modal Deudor (apertura/cierre)
+  // ----------------------
+  const modalDeudorLocal = document.getElementById(SELECTORS.modalDeudor);
+  document.getElementById(SELECTORS.btnToggleModalDeudor).addEventListener('click', () => {
+    modalDeudorLocal.classList.remove('hidden');
+  });
+  document.getElementById(SELECTORS.btnCloseModalDeudor).addEventListener('click', () => {
+    modalDeudorLocal.classList.add('hidden');
+    document.getElementById(SELECTORS.formDeudor).reset();
+  });
 });
 
-document.getElementById("btn-close-modal-deudor").addEventListener("click", () => {
-  modalDeudor.classList.add("hidden");
-  document.getElementById("form-deudor").reset();
-});
-
-
-});
+// ============================================================================
+// Renderizadores (SIN cambios de lógica)
+// ============================================================================
 function renderTablaDeudores(deudores) {
-  const tbody = document.getElementById("tabla-deudores-container");
-  tbody.innerHTML = "";
+  const tbody = document.getElementById(SELECTORS.tablaDeudores);
+  tbody.innerHTML = '';
 
   deudores.forEach((d) => {
-    const fila = document.createElement("tr");
-    let tipo = "";
-    if( d.tipo == "1") {
-      tipo = "normal";
-    } else if (d.tipo == "2") {
-      tipo = "especial";
+    const fila = document.createElement('tr');
+    let tipo = '';
+    if (d.tipo == '1') {
+      tipo = 'normal';
+    } else if (d.tipo == '2') {
+      tipo = 'especial';
     }
     fila.innerHTML = `
       <td class="p-2">${d.nombre}</td>
@@ -131,35 +202,36 @@ function renderTablaDeudores(deudores) {
     tbody.appendChild(fila);
   });
 }
+
 function renderTablaPrestamos(prestamos) {
-  const tbody = document.getElementById("tabla-prestamos-container");
-  tbody.innerHTML = "";
+  const tbody = document.getElementById(SELECTORS.tablaPrestamos);
+  tbody.innerHTML = '';
 
   prestamos.forEach((p) => {
     const nombreDeudor = deudoresMap.get(p.deudor) || `ID: ${p.deudor}`;
     const nombreCobrador = usuariosMap.get(p.cobrador) || `ID: ${p.cobrador}`;
-    let estadoTexto = "";
-    let estadoClase = "";
+    let estadoTexto = '';
+    let estadoClase = '';
 
     if (p.estado === 1) {
-      estadoTexto = "Pendiente";
-      estadoClase = "text-yellow-600 font-semibold";
+      estadoTexto = 'Pendiente';
+      estadoClase = 'text-yellow-600 font-semibold';
     } else if (p.estado === 2) {
-      estadoTexto = "Pagado";
-      estadoClase = "text-green-600 font-semibold";
+      estadoTexto = 'Pagado';
+      estadoClase = 'text-green-600 font-semibold';
     } else if (p.estado === 3) {
-      estadoTexto = "En mora";
-      estadoClase = "text-red-600 font-semibold";
+      estadoTexto = 'En mora';
+      estadoClase = 'text-red-600 font-semibold';
     } else {
-      estadoTexto = "Desconocido";
-      estadoClase = "text-gray-500";
+      estadoTexto = 'Desconocido';
+      estadoClase = 'text-gray-500';
     }
 
-    const fila = document.createElement("tr");
+    const fila = document.createElement('tr');
     fila.innerHTML = `
       <td class="p-2">${nombreDeudor}</td>
-      <td class="p-2">${Number(p.monto).toLocaleString("es-CO")}</td>
-      <td class="p-2">${Number(p.saldo_pendiente).toLocaleString("es-CO")}</td>
+      <td class="p-2">${Number(p.monto).toLocaleString('es-CO')}</td>
+      <td class="p-2">${Number(p.saldo_pendiente).toLocaleString('es-CO')}</td>
       <td class="p-2">${p.meses}</td>
       <td class="p-2">${formatearFecha(p.fecha)}</td>
       <td class="p-2"><span class="${estadoClase}">${estadoTexto}</span></td>
@@ -168,13 +240,14 @@ function renderTablaPrestamos(prestamos) {
     tbody.appendChild(fila);
   });
 }
+
 function aplicarFiltrosPrestamos() {
-  const texto = document.getElementById("buscar-prestamo").value.toLowerCase();
-  const estado = document.getElementById("filtro-estado").value;
-  const cobrador = document.getElementById("filtro-cobrador").value;
+  const texto = document.getElementById(SELECTORS.buscarPrestamo).value.toLowerCase();
+  const estado = document.getElementById(SELECTORS.filtroEstado).value;
+  const cobrador = document.getElementById(SELECTORS.filtroCobrador).value;
 
   const filtrados = prestamosGlobal.filter((p) => {
-    const nombreDeudor = (deudoresMap.get(p.deudor) || "").toLowerCase();
+    const nombreDeudor = (deudoresMap.get(p.deudor) || '').toLowerCase();
     const coincideNombre = nombreDeudor.includes(texto);
     const coincideEstado = !estado || String(p.estado) === estado;
     const coincideCobrador = !cobrador || String(p.cobrador) === cobrador;
@@ -183,70 +256,71 @@ function aplicarFiltrosPrestamos() {
 
   renderTablaPrestamos(filtrados);
 }
+
 function renderTablaPagos(pagos) {
-  const tbody = document.getElementById("tabla-pagos-container");
-  tbody.innerHTML = "";
+  const tbody = document.getElementById(SELECTORS.tablaPagos);
+  tbody.innerHTML = '';
 
   pagos.forEach((p) => {
     const nombreDeudor = getNombreDeudorDesdePago(p);
     const nombreCobrador = getNombreCobradorDesdePago(p);
 
-    const fila = document.createElement("tr");
+    const fila = document.createElement('tr');
     fila.innerHTML = `
       <td class="p-2">${nombreDeudor}</td>
       <td class="p-2">${nombreCobrador}</td>
-      <td class="p-2">${Number(p.monto_pagado).toLocaleString("es-CO")}</td>
+      <td class="p-2">${Number(p.monto_pagado).toLocaleString('es-CO')}</td>
       <td class="p-2">${formatearFecha(p.fecha)}</td>
     `;
     tbody.appendChild(fila);
   });
 }
-async function cargarPagosFiltrados(mes = "") {
-  const url = mes
-    ? `https://inversiones-api.onrender.com/api/pagos/?mes=${mes}`
-    : `https://inversiones-api.onrender.com/api/pagos/`;
+
+// ============================================================================
+// Data fetching / cálculos (SIN cambios de lógica)
+// ============================================================================
+async function cargarPagosFiltrados(mes = '') {
+  const url = mes ? `${API_BASE}/pagos/?mes=${mes}` : `${API_BASE}/pagos/`;
   const pagos = await fetchWithAuth(url);
   renderTablaPagos(pagos);
 
-  // Calcular total del mes y actualizar resumen
-  const totalMes = pagos.reduce(
-    (sum, p) => sum + parseFloat(p.monto_pagado || 0),
-    0
-  );
-  document.getElementById("total-recaudado").textContent =totalMes.toLocaleString("es-CO");
+  const totalMes = pagos.reduce((sum, p) => sum + parseFloat(p.monto_pagado || 0), 0);
+  document.getElementById(SELECTORS.totalRecaudado).textContent = totalMes.toLocaleString('es-CO');
 }
+
 function formatearFecha(fechaISO) {
   const fecha = new Date(fechaISO);
-  return fecha.toLocaleString("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return fecha.toLocaleString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   });
 }
+
 function getNombreDeudorDesdePago(pago) {
   const prestamo = prestamosGlobal.find((pr) => pr.id === pago.prestamo);
-  if (!prestamo) return "Prestamo no encontrado";
+  if (!prestamo) return 'Prestamo no encontrado';
 
   const deudor = deudoresGlobal.find((d) => d.id === prestamo.deudor);
-  return deudor
-    ? `${deudor.nombre} ${deudor.apellido}`
-    : "Deudor no encontrado";
+  return deudor ? `${deudor.nombre} ${deudor.apellido}` : 'Deudor no encontrado';
 }
+
 function getNombreCobradorDesdePago(pago) {
   const prestamo = prestamosGlobal.find((pr) => pr.id === pago.prestamo);
-  if (!prestamo) return "Préstamo no encontrado";
+  if (!prestamo) return 'Préstamo no encontrado';
 
   const cobrador = usuariosMap.get(prestamo.cobrador);
-  return cobrador || "Cobrador no encontrado";
+  return cobrador || 'Cobrador no encontrado';
 }
+
 function renderTablaCobradores(cobradores) {
-  const tbody = document.getElementById("tabla-cobradores-container");
-  tbody.innerHTML = "";
+  const tbody = document.getElementById(SELECTORS.tablaCobradores);
+  tbody.innerHTML = '';
 
   cobradores.forEach((c) => {
-    const fila = document.createElement("tr");
+    const fila = document.createElement('tr');
     fila.innerHTML = `
       <td class="p-2">${c.nombre} ${c.apellido}</td>
       <td class="p-2">${c.identificacion}</td>
@@ -255,212 +329,226 @@ function renderTablaCobradores(cobradores) {
     tbody.appendChild(fila);
   });
 }
-document.getElementById("form-cobrador").addEventListener("submit", async (e) => {
-    e.preventDefault();
 
-    const data = {
-      nombre: document.getElementById("nuevo-nombre").value,
-      apellido: document.getElementById("nuevo-apellido").value,
-      identificacion: document.getElementById("nuevo-identificacion").value,
-      telefono: document.getElementById("nuevo-telefono").value,
-      contraseña: "123456789", // contraseña por defecto
-      rol: 2, // asumiendo que rol 2 es cobrador
-    };
-
-    const token = localStorage.getItem("token");
-
-    const res = await fetch("https://inversiones-api.onrender.com/api/usuarios/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (res.ok) {
-      mostrarToast("exito", "Cobrador creado con éxito");
-      location.reload(); // o volver a cargar la lista con fetch
-    } else {
-      mostrarToast("error", "Error al crear cobrador");
-    }
-  });
-// Definir fuera del submit para asegurar que esté disponible
-const modalDeudor = document.getElementById("modal-deudor");
-document.getElementById("form-deudor").addEventListener("submit", async (e) => {
+// ============================================================================
+// Formularios (listeners fuera de DOMContentLoaded, manteniendo comportamiento)
+// ============================================================================
+document.getElementById(SELECTORS.formCobrador).addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const data = {
-    nombre: document.getElementById("deudor-nombre").value,
-    apellido: document.getElementById("deudor-apellido").value,
-    id: document.getElementById("deudor-identificacion").value,
-    telefono: document.getElementById("deudor-telefono").value,
-    direccion: document.getElementById("deudor-direccion").value,
-    tipo: document.getElementById("deudor-tipo").value,
-    cobrador_id: document.getElementById("deudor-cobrador").value,
+    nombre: document.getElementById(SELECTORS.nuevoNombre).value,
+    apellido: document.getElementById(SELECTORS.nuevoApellido).value,
+    identificacion: document.getElementById(SELECTORS.nuevoIdentificacion).value,
+    telefono: document.getElementById(SELECTORS.nuevoTelefono).value,
+    contraseña: '123456789',
+    rol: 2
   };
 
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
 
-  const res = await fetch("https://inversiones-api.onrender.com/api/deudores/", {
-    method: "POST",
+  const res = await fetch(`${API_BASE}/usuarios/`, {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`
-    },
-    body: JSON.stringify(data)
-  });
-
-  if (res.ok) {
-    // Cerrar modal
-    modalDeudor.classList.add("hidden");
-
-    // Limpiar formulario
-    document.getElementById("form-deudor").reset();
-
-    // Actualizar tabla
-    const nuevosDeudores = await fetchWithAuth("https://inversiones-api.onrender.com/api/deudores/");
-    deudoresGlobal = nuevosDeudores;
-    renderTablaDeudores(nuevosDeudores);
-
-    // Mostrar toast de éxito
-    const toast = document.getElementById("toast-exito");
-    toast.classList.remove("hidden");
-    setTimeout(() => toast.classList.add("hidden"), 3000);
-  } else {
-    mostrarToast("error", "Error al crear el deudor");
-  }
-});
-function cargarOpcionesCobradores(usuarios) {
-  const select = document.getElementById("deudor-cobrador");
-  select.innerHTML = '<option value="">Seleccionar Cobrador</option>';
-  usuarios
-    .filter(u => u.rol === 2) // solo rol cobrador
-    .forEach(c => {
-      const option = document.createElement("option");
-      option.value = c.id;
-      option.textContent = `${c.nombre} ${c.apellido}`;
-      select.appendChild(option);
-    });
-}
-function mostrarToast(tipo = "exito", mensaje = "") {
-  const id = tipo === "error" ? "toast-error" : "toast-exito";
-  const toast = document.getElementById(id);
-
-  if (!toast) return;
-
-  toast.textContent = mensaje || (tipo === "error" ? "Ocurrió un error" : "Acción exitosa");
-  toast.classList.remove("hidden");
-
-  setTimeout(() => {
-    toast.classList.add("hidden");
-  }, 3000);
-}
-// Modal Préstamo
-const modalPrestamo = document.getElementById("modal-prestamo");
-document.getElementById("btn-toggle-modal-prestamo").addEventListener("click", () => {
-  cargarSelectDeudores();
-  modalPrestamo.classList.remove("hidden");
-});
-document.getElementById("cerrar-modal-prestamo").addEventListener("click", () => {
-  modalPrestamo.classList.add("hidden");
-  document.getElementById("form-prestamo").reset();
-});
-// Modal Pago
-const modalPago = document.getElementById("modal-pago");
-document.getElementById("btn-toggle-modal-pago").addEventListener("click", () => {
-  cargarSelectPrestamos();
-  modalPago.classList.remove("hidden");
-});
-document.getElementById("btn-close-modal-pago").addEventListener("click", () => {
-  modalPago.classList.add("hidden");
-  document.getElementById("form-pago").reset();
-});
-// Cargar deudores en select
-function cargarSelectDeudores() {
-  const select = document.getElementById("prestamo-deudor");
-  select.innerHTML = '<option value="">Seleccionar Deudor</option>';
-  deudoresGlobal.forEach((d) => {
-    const option = document.createElement("option");
-    option.value = d.id;
-    option.textContent = `${d.nombre} ${d.apellido}`;
-    select.appendChild(option);
-  });
-}
-// Cargar préstamos en select
-function cargarSelectPrestamos() {
-  const select = document.getElementById("pago-prestamo");
-  select.innerHTML = '<option value="">Seleccionar Préstamo</option>';
-  prestamosGlobal.forEach((p) => {
-    const nombre = deudoresMap.get(p.deudor) || `ID: ${p.deudor}`;
-    const option = document.createElement("option");
-    option.value = p.id;
-    option.textContent = `${nombre} - $${Number(p.monto).toLocaleString("es-CO")}`;
-    select.appendChild(option);
-  });
-}
-// Enviar formulario préstamo
-document.getElementById("form-prestamo").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const token = localStorage.getItem("token");
-
-  const data = {
-  deudor: parseInt(document.getElementById("prestamo-deudor").value),
-  monto: parseInt(document.getElementById("prestamo-monto").value),
-  interes: parseInt(document.getElementById("prestamo-interes").value),
-  meses: parseInt(document.getElementById("prestamo-meses").value),
-  fecha: document.getElementById("prestamo-fecha").value,
-
-  cobrador: "1"
-
-
-};
-
-  const res = await fetch("https://inversiones-api.onrender.com/api/prestamos/", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (res.ok) {
-    mostrarToast("exito", "Préstamo registrado");
-    document.getElementById("modal-prestamo").classList.add("hidden");
-    document.getElementById("form-prestamo").reset();
-    const nuevos = await fetchWithAuth("https://inversiones-api.onrender.com/api/prestamos/");
-    prestamosGlobal = nuevos;
-    renderTablaPrestamos(nuevos);
-  } else {
-    mostrarToast("error", "Error al registrar préstamo");
-  }
-});
-// Enviar formulario pago
-document.getElementById("form-pago").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const token = localStorage.getItem("token");
-  const data = {
-    prestamo: document.getElementById("pago-prestamo").value,
-    monto_pagado: document.getElementById("pago-monto").value,
-    fecha: document.getElementById("pago-fecha").value
-  };
-
-  const res = await fetch("https://inversiones-api.onrender.com/api/pagos/", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify(data)
   });
 
   if (res.ok) {
-    modalPago.classList.add("hidden");
-    document.getElementById("form-pago").reset();
-    await cargarPagosFiltrados();
-    mostrarToast("exito", "Pago registrado con éxito");
+    mostrarToast('exito', 'Cobrador creado con éxito');
+    location.reload();
   } else {
-    mostrarToast("error", "Error al registrar el pago");
+    mostrarToast('error', 'Error al crear cobrador');
+  }
+});
+
+// Definir fuera del submit para asegurar que esté disponible
+const modalDeudor = document.getElementById(SELECTORS.modalDeudor);
+document.getElementById(SELECTORS.formDeudor).addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const data = {
+    nombre: document.getElementById(SELECTORS.deudorNombre).value,
+    apellido: document.getElementById(SELECTORS.deudorApellido).value,
+    id: document.getElementById(SELECTORS.deudorIdentificacion).value,
+    telefono: document.getElementById(SELECTORS.deudorTelefono).value,
+    direccion: document.getElementById(SELECTORS.deudorDireccion).value,
+    tipo: document.getElementById(SELECTORS.deudorTipo).value,
+    cobrador_id: document.getElementById(SELECTORS.selectDeudorCobrador).value
+  };
+
+  const token = localStorage.getItem('token');
+
+  const res = await fetch(`${API_BASE}/deudores/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok) {
+    modalDeudor.classList.add('hidden');
+    document.getElementById(SELECTORS.formDeudor).reset();
+
+    const nuevosDeudores = await fetchWithAuth(`${API_BASE}/deudores/`);
+    deudoresGlobal = nuevosDeudores;
+    renderTablaDeudores(nuevosDeudores);
+
+    const toast = document.getElementById(SELECTORS.toastExito);
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 3000);
+  } else {
+    mostrarToast('error', 'Error al crear el deudor');
+  }
+});
+
+function cargarOpcionesCobradores(usuarios) {
+  const select = document.getElementById(SELECTORS.selectDeudorCobrador);
+  select.innerHTML = '<option value="">Seleccionar Cobrador</option>';
+  usuarios
+    .filter((u) => u.rol === 2)
+    .forEach((c) => {
+      const option = document.createElement('option');
+      option.value = c.id;
+      option.textContent = `${c.nombre} ${c.apellido}`;
+      select.appendChild(option);
+    });
+}
+
+function mostrarToast(tipo = 'exito', mensaje = '') {
+  const id = tipo === 'error' ? SELECTORS.toastError : SELECTORS.toastExito;
+  const toast = document.getElementById(id);
+
+  if (!toast) return;
+
+  toast.textContent = mensaje || (tipo === 'error' ? 'Ocurrió un error' : 'Acción exitosa');
+  toast.classList.remove('hidden');
+
+  setTimeout(() => {
+    toast.classList.add('hidden');
+  }, 3000);
+}
+
+// ----------------------
+// Modal Préstamo
+// ----------------------
+const modalPrestamo = document.getElementById(SELECTORS.modalPrestamo);
+document.getElementById(SELECTORS.btnToggleModalPrestamo).addEventListener('click', () => {
+  cargarSelectDeudores();
+  modalPrestamo.classList.remove('hidden');
+});
+document.getElementById(SELECTORS.btnCloseModalPrestamo).addEventListener('click', () => {
+  modalPrestamo.classList.add('hidden');
+  document.getElementById(SELECTORS.formPrestamo).reset();
+});
+
+// ----------------------
+// Modal Pago
+// ----------------------
+const modalPago = document.getElementById(SELECTORS.modalPago);
+document.getElementById(SELECTORS.btnToggleModalPago).addEventListener('click', () => {
+  cargarSelectPrestamos();
+  modalPago.classList.remove('hidden');
+});
+document.getElementById(SELECTORS.btnCloseModalPago).addEventListener('click', () => {
+  modalPago.classList.add('hidden');
+  document.getElementById(SELECTORS.formPago).reset();
+});
+
+// ----------------------
+// Selects auxiliares
+// ----------------------
+function cargarSelectDeudores() {
+  const select = document.getElementById(SELECTORS.selectPrestamoDeudor);
+  select.innerHTML = '<option value="">Seleccionar Deudor</option>';
+  deudoresGlobal.forEach((d) => {
+    const option = document.createElement('option');
+    option.value = d.id;
+    option.textContent = `${d.nombre} ${d.apellido}`;
+    select.appendChild(option);
+  });
+}
+
+function cargarSelectPrestamos() {
+  const select = document.getElementById(SELECTORS.selectPagoPrestamo);
+  select.innerHTML = '<option value="">Seleccionar Préstamo</option>';
+  prestamosGlobal.forEach((p) => {
+    const nombre = deudoresMap.get(p.deudor) || `ID: ${p.deudor}`;
+    const option = document.createElement('option');
+    option.value = p.id;
+    option.textContent = `${nombre} - $${Number(p.monto).toLocaleString('es-CO')}`;
+    select.appendChild(option);
+  });
+}
+
+// ----------------------
+// Submit Préstamo
+// ----------------------
+document.getElementById(SELECTORS.formPrestamo).addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem('token');
+
+  const data = {
+    deudor: parseInt(document.getElementById(SELECTORS.selectPrestamoDeudor).value),
+    monto: parseInt(document.getElementById(SELECTORS.inputPrestamoMonto).value),
+    interes: parseInt(document.getElementById(SELECTORS.inputPrestamoInteres).value),
+    meses: parseInt(document.getElementById(SELECTORS.inputPrestamoMeses).value),
+    fecha: document.getElementById(SELECTORS.inputPrestamoFecha).value,
+    cobrador: '1'
+  };
+
+  const res = await fetch(`${API_BASE}/prestamos/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok) {
+    mostrarToast('exito', 'Préstamo registrado');
+    document.getElementById(SELECTORS.modalPrestamo).classList.add('hidden');
+    document.getElementById(SELECTORS.formPrestamo).reset();
+    const nuevos = await fetchWithAuth(`${API_BASE}/prestamos/`);
+    prestamosGlobal = nuevos;
+    renderTablaPrestamos(nuevos);
+  } else {
+    mostrarToast('error', 'Error al registrar préstamo');
+  }
+});
+
+// ----------------------
+// Submit Pago
+// ----------------------
+document.getElementById(SELECTORS.formPago).addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem('token');
+  const data = {
+    prestamo: document.getElementById(SELECTORS.selectPagoPrestamo).value,
+    monto_pagado: document.getElementById(SELECTORS.inputPagoMonto).value,
+    fecha: document.getElementById(SELECTORS.inputPagoFecha).value
+  };
+
+  const res = await fetch(`${API_BASE}/pagos/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok) {
+    modalPago.classList.add('hidden');
+    document.getElementById(SELECTORS.formPago).reset();
+    await cargarPagosFiltrados();
+    mostrarToast('exito', 'Pago registrado con éxito');
+  } else {
+    mostrarToast('error', 'Error al registrar el pago');
   }
 });
