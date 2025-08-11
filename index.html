@@ -5,43 +5,159 @@
     <title>Login - Inversiones MP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      :root { color-scheme: light; }
+      /* Fondo sutil con trama clara */
+      .bg-grid {
+        background-image:
+          radial-gradient(circle at 1px 1px, rgba(0,0,0,.05) 1px, transparent 1px);
+        background-size: 22px 22px;
+      }
+      /* Card */
+      .auth-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      }
+      /* Input con icono */
+      .input-base {
+        width: 100%;
+        padding: .75rem .875rem .75rem 2.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #fff;
+        transition: box-shadow .2s, border-color .2s, background-color .2s;
+      }
+      .input-base::placeholder { color: #9ca3af; }
+      .input-base:focus {
+        outline: none;
+        border-color: #111827;
+        box-shadow: 0 0 0 4px rgba(0,0,0,.08);
+        background: #fff;
+      }
+      /* Toast */
+      #toast-error {
+        box-shadow: 0 10px 30px rgba(220, 38, 38, .35);
+      }
+      /* Botón primario */
+      .btn-primary {
+        background: #000; color: #fff;
+        border-radius: 10px; padding: .80rem 1rem;
+        font-weight: 600; width: 100%;
+        transition: transform .06s ease, background-color .2s ease;
+      }
+      .btn-primary:hover { background: #111; }
+      .btn-primary:active { transform: scale(.99); }
+    </style>
   </head>
-  <body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans">
-    <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 transition duration-300 hover:shadow-md w-full max-w-sm">
-      <h2 class="text-2xl font-semibold text-center text-gray-900 mb-6">Iniciar sesión</h2>
-      <form id="login-form" class="space-y-4">
-        <input
-          type="text"
-          id="identificacion"
-          placeholder="Identificación"
-          required
-          class="w-full px-4 py-3 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
-        />
-        <input
-          type="password"
-          id="contraseña"
-          placeholder="Contraseña"
-          required
-          class="w-full px-4 py-3 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
-        />
-        <button
-          type="submit"
-          class="w-full bg-gray-900 text-white py-3 text-base rounded shadow hover:bg-gray-800 transition duration-200"
-        >
-          Ingresar
-        </button>
-      </form>
-    </div>
 
-    <!-- Toast de error -->
+  <body class="min-h-screen bg-gray-50 text-gray-900 antialiased">
+    <!-- Header -->
+    <header class="border-b border-gray-200 bg-black">
+      <div class="mx-auto max-w-6xl h-14 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+        <h1 class="text-base sm:text-lg font-semibold tracking-tight text-white">
+          Inversiones MP
+        </h1>
+        <div aria-hidden="true" class="text-white/60 text-sm">Acceso</div>
+      </div>
+    </header>
+
+    <!-- Contenido -->
+    <main class="bg-grid">
+      <section class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div class="min-h-[calc(100vh-3.5rem)] grid place-items-center py-10">
+          <div class="auth-card w-full max-w-md bg-white">
+            <!-- Borde superior acento -->
+            <div class="h-1.5 w-full bg-black rounded-t-[14px]"></div>
+
+            <div class="p-6 sm:p-8">
+              <!-- Marca -->
+              <div class="flex items-center gap-3 mb-6">
+                <div class="h-9 w-9 rounded-full bg-black text-white grid place-items-center text-sm font-bold">MP</div>
+                <div>
+                  <h2 class="text-xl font-semibold text-gray-900 leading-tight">Bienvenido</h2>
+                  <p class="text-sm text-gray-500">Inicia sesión para continuar</p>
+                </div>
+              </div>
+
+              <!-- Form -->
+              <form id="login-form" class="space-y-4">
+                <!-- Identificación -->
+                <div class="relative">
+                  <svg class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  <label for="identificacion" class="sr-only">Identificación</label>
+                  <input
+                    type="text"
+                    id="identificacion"
+                    placeholder="Identificación"
+                    required
+                    class="input-base"
+                    autocomplete="username"
+                  />
+                </div>
+
+                <!-- Contraseña -->
+                <div class="relative">
+                  <svg class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  <label for="contraseña" class="sr-only">Contraseña</label>
+                  <input
+                    type="password"
+                    id="contraseña"
+                    placeholder="Contraseña"
+                    required
+                    class="input-base pr-12"
+                    autocomplete="current-password"
+                  />
+                  <button type="button" id="toggle-pass" class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black">
+                    Mostrar
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-between text-sm text-gray-600">
+                </div>
+
+                <button type="submit" class="btn-primary">Ingresar</button>
+              </form>
+
+              <!-- Legal / soporte -->
+              <div class="mt-5 text-[13px] text-gray-500 flex items-center justify-between">
+                <span>© 2025 HozballSolution</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Toast de error (mismo ID) -->
     <div
       id="toast-error"
-      class="fixed top-20 bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg hidden z-20 transition-opacity duration-500 ease-in-out"
-
+      class="fixed top-20 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg hidden z-20"
+      role="alert"
     >
       ❌ Credenciales incorrectas
     </div>
 
+    <!-- JS propio del proyecto -->
     <script type="module" src="js/auth.js"></script>
+
+    <!-- Toggle mostrar/ocultar contraseña (no interfiere con tu auth.js) -->
+    <script>
+      (function () {
+        const btn = document.getElementById('toggle-pass');
+        const input = document.getElementById('contraseña');
+        if (!btn || !input) return;
+        btn.addEventListener('click', () => {
+          const isPwd = input.getAttribute('type') === 'password';
+          input.setAttribute('type', isPwd ? 'text' : 'password');
+          btn.textContent = isPwd ? 'Ocultar' : 'Mostrar';
+          input.focus();
+        });
+      })();
+    </script>
   </body>
 </html>
