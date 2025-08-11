@@ -192,8 +192,10 @@ function renderTablaDeudores(deudores) {
     } else if (d.tipo == '2') {
       tipo = 'especial';
     }
+    let nombrecompleto = `${d.nombre} ${d.apellido}`
+
     fila.innerHTML = `
-      <td class="p-2">${d.nombre}</td>
+      <td class="p-2">${nombrecompleto}</td>
       <td class="p-2">${d.id}</td>
       <td class="p-2">${d.telefono}</td>
       <td class="p-2">${d.direccion}</td>
@@ -277,10 +279,17 @@ function renderTablaPagos(pagos) {
 }
 
 // ============================================================================
-// Data fetching / cálculos (SIN cambios de lógica)
+// Data fetching / cálculos
 // ============================================================================
 async function cargarPagosFiltrados(mes = '') {
-  const url = mes ? `${API_BASE}/pagos/?mes=${mes}` : `${API_BASE}/pagos/`;
+  // If no month specified, get current month
+  const currentDate = new Date();
+  const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+  
+  // Use current month if no month specified
+  const monthToUse = mes || currentMonth;
+  const url = `${API_BASE}/pagos/?mes=${monthToUse}`;
+  
   const pagos = await fetchWithAuth(url);
   renderTablaPagos(pagos);
 
@@ -480,7 +489,7 @@ function cargarSelectPrestamos() {
     const nombre = deudoresMap.get(p.deudor) || `ID: ${p.deudor}`;
     const option = document.createElement('option');
     option.value = p.id;
-    option.textContent = `${nombre} - $${Number(p.monto).toLocaleString('es-CO')}`;
+    option.textContent = `${nombre} - $${Number(p.saldo_pendiente).toLocaleString('es-CO')}`;
     select.appendChild(option);
   });
 }
