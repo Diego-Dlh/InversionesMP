@@ -47,7 +47,7 @@ const SELECTORS = {
   tablaPagos: 'tabla-pagos-container',
   tablaCobradores: 'tabla-cobradores-container',
 
-  // resumen
+  // resumen (cards)
   deudoresCount: 'deudores-count',
   prestamosCount: 'prestamos-count',
   pagosCount: 'pagos-count',
@@ -119,7 +119,7 @@ const slicePage = (key) => {
  * ==========================================================================*/
 document.addEventListener('DOMContentLoaded', async () => {
   ensureConfirmUI(); // modal confirmar (eliminar)
-  ensureTableToolbars(); // toolbars (paginación + export) por tabla
+  ensureTableToolbars(); // paginación + export
 
   const rol = localStorage.getItem('rol');
   if (rol !== '1') {
@@ -145,20 +145,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     deudores.forEach(d => deudoresMap.set(String(d.id), `${d.nombre} ${d.apellido ?? ''}`.trim()));
     usuarios.forEach(u => usuariosMap.set(String(u.id), `${u.nombre} ${u.apellido ?? ''}`.trim()));
 
-    // resumen
+    // cards (resumen)
     setText(SELECTORS.deudoresCount, deudores.length);
     setText(SELECTORS.prestamosCount, prestamos.length);
     setText(SELECTORS.pagosCount, pagos.length);
     setText(SELECTORS.usuariosCount, usuarios.length);
 
-    // render inicial (con paginación)
+    // render inicial
     renderTablaDeudores(deudoresGlobal);
     renderTablaPrestamos(prestamosGlobal);
     renderTablaCobradores(usuariosGlobal);
     cargarOpcionesCobradores(usuariosGlobal);
     poblarFiltroCobrador(usuariosGlobal);
 
-    await cargarPagosFiltrados();
+    await cargarPagosFiltrados(); // calcula total recaudado (mes)
   } catch (err) {
     console.error(err);
     mostrarToast('error', 'Error cargando datos');
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const identificacion = (d.identificacion || d.id || '').toString().toLowerCase();
       return nombre.includes(q) || identificacion.includes(q);
     });
-    renderTablaDeudores(filtrados); // mantiene paginación
+    renderTablaDeudores(filtrados);
   });
 
   byId(SELECTORS.buscarPrestamo)?.addEventListener('input', aplicarFiltrosPrestamos);
@@ -213,13 +213,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   byId(SELECTORS.btnToggleModalPago)?.addEventListener('click', () => { cargarSelectPrestamos(); modalPago?.classList.remove('hidden'); });
   byId(SELECTORS.btnCloseModalPago)?.addEventListener('click', () => { modalPago?.classList.add('hidden'); byId(SELECTORS.formPago)?.reset(); });
 
-  // Modal Confirmación (Eliminar)
+  // Confirmación (Eliminar)
   byId('mp-confirm-cancel')?.addEventListener('click', () => { pendingDelete = null; hideConfirmModal(); });
   byId('mp-confirm-ok')?.addEventListener('click', () => {
     if (!pendingDelete) return;
     const { tipo, id } = pendingDelete;
     pendingDelete = null; hideConfirmModal(); handleDelete(tipo, id);
   });
+
+  /* -------------------------
+   * Validaciones en tiempo real (solo dígitos)
+   * -----------------------*/
+  attachNumericSanitizers([
+    SELECTORS.inputPrestamoMonto,
+    SELECTORS.inputPrestamoInteres,
+    SELECTORS.inputPrestamoMeses,
+    SELECTORS.inputPagoMonto,
+    SELECTORS.deudorIdentificacion,
+    SELECTORS.nuevoIdentificacion,
+    SELECTORS.deudorTelefono,
+    SELECTORS.nuevoTelefono
+  ]);
 });
 
 /* ============================================================================
@@ -379,16 +393,23 @@ function getNombreCobradorDesdePago(pago) {
 }
 
 /* ============================================================================
- * Formularios (sin cambios funcionales)
+ * Formularios + Validaciones y actualizaciones de cards
  * ==========================================================================*/
 // Cobrador: crear
 byId(SELECTORS.formCobrador)?.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!validateForm([
+    { id: SELECTORS.nuevoNombre, type: 'text' },
+    { id: SELECTORS.nuevoApellido, type: 'text' },
+    { id: SELECTORS.nuevoIdentificacion, type: 'numberPositive' },
+    { id: SELECTORS.nuevoTelefono, type: 'numberPositive' }
+  ])) return;
+
   const data = {
-    nombre: byId(SELECTORS.nuevoNombre).value,
-    apellido: byId(SELECTORS.nuevoApellido).value,
-    identificacion: byId(SELECTORS.nuevoIdentificacion).value,
-    telefono: byId(SELECTORS.nuevoTelefono).value,
+    nombre: byId(SELECTORS.nuevoNombre).value.trim(),
+    apellido: byId(SELECTORS.nuevoApellido).value.trim(),
+    identificacion: byId(SELECTORS.nuevoIdentificacion).value.trim(),
+    telefono: byId(SELECTORS.nuevoTelefono).value.trim(),
     contraseña: '123456789',
     rol: 2
   };
@@ -401,8 +422,17 @@ byId(SELECTORS.formCobrador)?.addEventListener('submit', async (e) => {
   });
 
   if (res.ok) {
+    // refrescar listado y card
+    usuariosGlobal = await fetchWithAuth(`${API_BASE}/usuarios/`);
+    usuariosMap = new Map(usuariosGlobal.map(u => [String(u.id), `${u.nombre} ${u.apellido ?? ''}`.trim()]));
+    setText(SELECTORS.usuariosCount, usuariosGlobal.length);
+    renderTablaCobradores(usuariosGlobal);
+    poblarFiltroCobrador(usuariosGlobal);
+    cargarOpcionesCobradores(usuariosGlobal);
+
+    byId(SELECTORS.modalCobrador)?.classList.add('hidden');
+    byId(SELECTORS.formCobrador)?.reset();
     mostrarToast('exito', 'Cobrador creado con éxito');
-    location.reload();
   } else {
     mostrarToast('error', 'Error al crear cobrador');
   }
@@ -411,13 +441,22 @@ byId(SELECTORS.formCobrador)?.addEventListener('submit', async (e) => {
 // Deudor: crear
 byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!validateForm([
+    { id: SELECTORS.deudorNombre, type: 'text' },
+    { id: SELECTORS.deudorApellido, type: 'text' },
+    { id: SELECTORS.deudorIdentificacion, type: 'numberPositive' },
+    { id: SELECTORS.deudorTelefono, type: 'numberPositive' },
+    { id: SELECTORS.deudorDireccion, type: 'text' },
+    { id: SELECTORS.deudorTipo, type: 'select' },
+    { id: SELECTORS.selectDeudorCobrador, type: 'select' }
+  ])) return;
 
   const data = {
-    nombre: byId(SELECTORS.deudorNombre).value,
-    apellido: byId(SELECTORS.deudorApellido).value,
-    id: byId(SELECTORS.deudorIdentificacion).value,
-    telefono: byId(SELECTORS.deudorTelefono).value,
-    direccion: byId(SELECTORS.deudorDireccion).value,
+    nombre: byId(SELECTORS.deudorNombre).value.trim(),
+    apellido: byId(SELECTORS.deudorApellido).value.trim(),
+    id: byId(SELECTORS.deudorIdentificacion).value.trim(),
+    telefono: byId(SELECTORS.deudorTelefono).value.trim(),
+    direccion: byId(SELECTORS.deudorDireccion).value.trim(),
     tipo: byId(SELECTORS.deudorTipo).value,
     cobrador_id: byId(SELECTORS.selectDeudorCobrador).value
   };
@@ -435,10 +474,8 @@ byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
 
     const nuevosDeudores = await fetchWithAuth(`${API_BASE}/deudores/`);
     deudoresGlobal = nuevosDeudores;
-
-    deudoresMap = new Map();
-    deudoresGlobal.forEach(d => deudoresMap.set(String(d.id), `${d.nombre} ${d.apellido}`));
-    setText(SELECTORS.deudoresCount, deudoresGlobal.length);
+    deudoresMap = new Map(nuevosDeudores.map(d => [String(d.id), `${d.nombre} ${d.apellido}`]));
+    setText(SELECTORS.deudoresCount, nuevosDeudores.length); // actualizar card
     renderTablaDeudores(nuevosDeudores);
 
     mostrarToast('exito', 'Deudor creado con éxito');
@@ -460,7 +497,7 @@ function cargarSelectDeudores() {
   });
 }
 
-// Pago: abrir select préstamos
+// Pago: abrir select préstamos (muestra saldo pendiente)
 function cargarSelectPrestamos() {
   const select = byId(SELECTORS.selectPagoPrestamo);
   if (!select) return;
@@ -477,13 +514,20 @@ function cargarSelectPrestamos() {
 // Préstamo: submit
 byId(SELECTORS.formPrestamo)?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const token = localStorage.getItem('token');
+  if (!validateForm([
+    { id: SELECTORS.selectPrestamoDeudor, type: 'select' },
+    { id: SELECTORS.inputPrestamoMonto, type: 'numberPositive' },
+    { id: SELECTORS.inputPrestamoInteres, type: 'numberRange', min: 1, max: 100 },
+    { id: SELECTORS.inputPrestamoMeses, type: 'numberPositive' },
+    { id: SELECTORS.inputPrestamoFecha, type: 'date' }
+  ])) return;
 
+  const token = localStorage.getItem('token');
   const data = {
-    deudor: parseInt(byId(SELECTORS.selectPrestamoDeudor).value),
-    monto: parseInt(byId(SELECTORS.inputPrestamoMonto).value),
-    interes: parseInt(byId(SELECTORS.inputPrestamoInteres).value),
-    meses: parseInt(byId(SELECTORS.inputPrestamoMeses).value),
+    deudor: parseInt(byId(SELECTORS.selectPrestamoDeudor).value, 10),
+    monto: parseInt(byId(SELECTORS.inputPrestamoMonto).value, 10),
+    interes: parseInt(byId(SELECTORS.inputPrestamoInteres).value, 10),
+    meses: parseInt(byId(SELECTORS.inputPrestamoMeses).value, 10),
     fecha: byId(SELECTORS.inputPrestamoFecha).value,
     cobrador: '1'
   };
@@ -501,7 +545,9 @@ byId(SELECTORS.formPrestamo)?.addEventListener('submit', async (e) => {
 
     const nuevos = await fetchWithAuth(`${API_BASE}/prestamos/`);
     prestamosGlobal = nuevos;
+    setText(SELECTORS.prestamosCount, nuevos.length);   // actualizar card
     renderTablaPrestamos(nuevos);
+    cargarSelectPrestamos(); // por si registras pago inmediatamente
   } else {
     mostrarToast('error', 'Error al registrar préstamo');
   }
@@ -510,10 +556,30 @@ byId(SELECTORS.formPrestamo)?.addEventListener('submit', async (e) => {
 // Pago: submit
 byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!validateForm([
+    { id: SELECTORS.selectPagoPrestamo, type: 'select' },
+    { id: SELECTORS.inputPagoMonto, type: 'numberPositive' },
+    { id: SELECTORS.inputPagoFecha, type: 'date' }
+  ])) return;
+
+  // Validación de negocio: monto <= saldo_pendiente
+  const prestamoId = parseInt(byId(SELECTORS.selectPagoPrestamo).value, 10);
+  const prestamo = prestamosGlobal.find(p => p.id === prestamoId);
+  const monto = parseInt(byId(SELECTORS.inputPagoMonto).value, 10);
+
+  if (prestamo && Number.isFinite(monto) && monto > prestamo.saldo_pendiente) {
+    const el = byId(SELECTORS.inputPagoMonto);
+    el.setCustomValidity(`El monto supera el saldo pendiente ($${Number(prestamo.saldo_pendiente).toLocaleString('es-CO')}).`);
+    el.reportValidity();
+    return;
+  } else {
+    byId(SELECTORS.inputPagoMonto).setCustomValidity('');
+  }
+
   const token = localStorage.getItem('token');
   const data = {
-    prestamo: byId(SELECTORS.selectPagoPrestamo).value,
-    monto_pagado: byId(SELECTORS.inputPagoMonto).value,
+    prestamo: prestamoId,
+    monto_pagado: monto,
     fecha: byId(SELECTORS.inputPagoFecha).value
   };
 
@@ -524,9 +590,21 @@ byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
   });
 
   if (res.ok) {
+    // cerrar modal + limpiar
     byId(SELECTORS.modalPago)?.classList.add('hidden');
     byId(SELECTORS.formPago)?.reset();
-    await cargarPagosFiltrados();
+
+    // 1) Recalcular pagos (card y total recaudado del mes)
+    const pagosAll = await fetchWithAuth(`${API_BASE}/pagos`);
+    setText(SELECTORS.pagosCount, pagosAll.length); // card de pagos (total)
+    await cargarPagosFiltrados(byId(SELECTORS.filtroMes)?.value || '');
+
+    // 2) Refrescar préstamos (saldo/estado) y su tabla
+    const nuevosPrestamos = await fetchWithAuth(`${API_BASE}/prestamos/`);
+    prestamosGlobal = nuevosPrestamos;
+    renderTablaPrestamos(nuevosPrestamos);
+    cargarSelectPrestamos();
+
     mostrarToast('exito', 'Pago registrado con éxito');
   } else {
     mostrarToast('error', 'Error al registrar el pago');
@@ -539,7 +617,6 @@ byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
 function onActionClick(e) {
   const btn = e.target.closest('button[data-action="delete"]');
   if (!btn) return;
-
   const id = btn.dataset.id;
   const tipo = btn.dataset.type; // 'deudor' | 'cobrador'
   showConfirmModal(tipo, id, btn.getAttribute('aria-label') || '');
@@ -588,7 +665,7 @@ async function handleDelete(tipo, id) {
 }
 
 /* ============================================================================
- * Toolbar por tabla: paginación + export
+ * Toolbar por tabla: paginación + export (sin cambios funcionales)
  * ==========================================================================*/
 function ensureTableToolbars() {
   mountToolbar(SELECTORS.tablaDeudores,   'deudores',   'deudores');
@@ -601,7 +678,6 @@ function mountToolbar(tbodyId, key, fileBase) {
   const tbody = byId(tbodyId); if (!tbody) return;
   const scroll = tbody.closest('.table-scroll'); if (!scroll) return;
 
-  // Toolbar (debajo de la tabla)
   const bar = document.createElement('div');
   bar.className = 'table-toolbar';
   bar.innerHTML = `
@@ -620,10 +696,8 @@ function mountToolbar(tbodyId, key, fileBase) {
     </div>`;
   scroll.insertAdjacentElement('afterend', bar);
 
-  // Listeners export
   byId(`exp-${key}-xls`)?.addEventListener('click', () => exportTable(key, 'xls', fileBase));
 
-  // Listeners paginación
   byId(`pgs-${key}`)?.addEventListener('change', (e) => {
     const n = parseInt(e.target.value, 10) || 10;
     paging[key].pageSize = n; paging[key].page = 1;
@@ -632,7 +706,6 @@ function mountToolbar(tbodyId, key, fileBase) {
   byId(`pg-${key}-prev`)?.addEventListener('click', () => { paging[key].page = Math.max(1, paging[key].page - 1); rerenderPage(key); });
   byId(`pg-${key}-next`)?.addEventListener('click', () => { paging[key].page = Math.min(pageCount(key), paging[key].page + 1); rerenderPage(key); });
 
-  // Inicializa selector
   byId(`pgs-${key}`).value = String(paging[key].pageSize);
 }
 
@@ -656,8 +729,8 @@ function rerenderPage(key) {
 }
 
 /* ============================================================================
-  Export CSV / Excel
-  ==========================================================================*/
+ * Export CSV / Excel
+ * ==========================================================================*/
 function exportTable(key, fmt = 'csv', fileBase = 'export') {
   const { headers, rows } = collectDataFor(key);
   if (!headers.length) return;
@@ -787,6 +860,59 @@ function escapeHTML(v) {
   return String(v).replaceAll('&', '&amp;').replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
+
+/* ============================================================================
+ * Validación helpers
+ * ==========================================================================*/
+function validateForm(specs) {
+  let ok = true;
+  for (const s of specs) {
+    const el = byId(s.id);
+    if (!el) continue;
+    const v = (el.value ?? '').toString().trim();
+    let err = '';
+
+    if (s.type === 'text') {
+      if (!v) err = 'Este campo es obligatorio.';
+    } else if (s.type === 'select') {
+      if (!v) err = 'Selecciona una opción.';
+    } else if (s.type === 'numberPositive') {
+      const n = parseInt(v, 10);
+      if (!v || Number.isNaN(n) || n <= 0) err = 'Ingresa un número válido (> 0).';
+    } else if (s.type === 'numberRange') {
+      const n = parseInt(v, 10);
+      if (!v || Number.isNaN(n)) err = 'Ingresa un número válido.';
+      else {
+        if (s.min != null && n < s.min) err = `Debe ser ≥ ${s.min}.`;
+        if (!err && s.max != null && n > s.max) err = `Debe ser ≤ ${s.max}.`;
+      }
+    } else if (s.type === 'date') {
+      if (!v || Number.isNaN(Date.parse(v))) err = 'Fecha inválida.';
+    }
+
+    el.setCustomValidity(err);
+    if (err && ok) el.reportValidity();
+    if (err) ok = false;
+  }
+  return ok;
+}
+
+function attachNumericSanitizers(ids = []) {
+  ids.forEach(id => {
+    const el = byId(id);
+    if (!el) return;
+    el.setAttribute('inputmode', 'numeric');
+    el.addEventListener('input', () => {
+      const cur = el.value;
+      const clean = cur.replace(/[^\d]/g, '');
+      if (cur !== clean) el.value = clean;
+      if (el.validity.customError) {
+        el.setCustomValidity('');
+      }
+    });
+  });
+}
+
 
 /* ============================================================================
  * Confirm UI (inyectado dinámicamente)
