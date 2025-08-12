@@ -469,7 +469,7 @@ function cargarSelectPrestamos() {
     const nombre = deudoresMap.get(String(p.deudor)) || `ID: ${p.deudor}`;
     const option = document.createElement('option');
     option.value = p.id;
-    option.textContent = `${nombre} - $${Number(p.monto).toLocaleString('es-CO')}`;
+    option.textContent = `${nombre} - $${Number(p.saldo_pendiente).toLocaleString('es-CO')}`;
     select.appendChild(option);
   });
 }
@@ -656,8 +656,8 @@ function rerenderPage(key) {
 }
 
 /* ============================================================================
- * Export CSV / Excel
- * ==========================================================================*/
+  Export CSV / Excel
+  ==========================================================================*/
 function exportTable(key, fmt = 'csv', fileBase = 'export') {
   const { headers, rows } = collectDataFor(key);
   if (!headers.length) return;
