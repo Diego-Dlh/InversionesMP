@@ -41,7 +41,7 @@ const SELECTORS = {
   btnCloseModalPago: 'btn-close-modal-pago',
   formPago: 'form-pago',
 
-  // tablas
+  // tablas (TBODY)
   tablaDeudores: 'tabla-deudores-container',
   tablaPrestamos: 'tabla-prestamos-container',
   tablaPagos: 'tabla-pagos-container',
@@ -94,14 +94,32 @@ let usuariosMap = new Map();
 
 let deudoresGlobal = [];
 let prestamosGlobal = [];
-let usuariosGlobal = []; // para refrescar cobradores/filtros al eliminar
+let usuariosGlobal = [];
 let pendingDelete = null; // { tipo: 'deudor' | 'cobrador', id: string|number }
+
+/* ----- Estado de paginación/vista por tabla ----- */
+const paging = {
+  deudores: { page: 1, pageSize: 10, view: [] },
+  cobradores: { page: 1, pageSize: 10, view: [] },
+  prestamos: { page: 1, pageSize: 10, view: [] },
+  pagos: { page: 1, pageSize: 10, view: [] }
+};
+
+/* Helpers paginación */
+const setView = (key, arr) => { paging[key].view = Array.isArray(arr) ? arr : []; paging[key].page = 1; };
+const pageCount = (key) => Math.max(1, Math.ceil((paging[key].view.length || 0) / paging[key].pageSize));
+const slicePage = (key) => {
+  const { page, pageSize, view } = paging[key];
+  const start = (page - 1) * pageSize;
+  return view.slice(start, start + pageSize);
+};
 
 /* ============================================================================
  * Bootstrap
  * ==========================================================================*/
 document.addEventListener('DOMContentLoaded', async () => {
-  ensureConfirmUI(); // inyecta modal confirm si no existe
+  ensureConfirmUI(); // modal confirmar (eliminar)
+  ensureTableToolbars(); // toolbars (paginación + export) por tabla
 
   const rol = localStorage.getItem('rol');
   if (rol !== '1') {
@@ -124,8 +142,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     usuariosGlobal = usuarios;
 
     // maps
-    deudores.forEach(d => deudoresMap.set(String(d.id), `${d.nombre} ${d.apellido}`));
-    usuarios.forEach(u => usuariosMap.set(String(u.id), `${u.nombre} ${u.apellido}`));
+    deudores.forEach(d => deudoresMap.set(String(d.id), `${d.nombre} ${d.apellido ?? ''}`.trim()));
+    usuarios.forEach(u => usuariosMap.set(String(u.id), `${u.nombre} ${u.apellido ?? ''}`.trim()));
 
     // resumen
     setText(SELECTORS.deudoresCount, deudores.length);
@@ -133,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setText(SELECTORS.pagosCount, pagos.length);
     setText(SELECTORS.usuariosCount, usuarios.length);
 
-    // render inicial
+    // render inicial (con paginación)
     renderTablaDeudores(deudoresGlobal);
     renderTablaPrestamos(prestamosGlobal);
     renderTablaCobradores(usuariosGlobal);
@@ -150,8 +168,7 @@ document.addEventListener('DOMContentLoaded', async () => {
    * Eventos globales
    * -----------------------*/
   byId(SELECTORS.logoutBtn)?.addEventListener('click', () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('rol');
+    localStorage.removeItem('token'); localStorage.removeItem('rol');
     window.location.href = 'index.html';
   });
 
@@ -162,11 +179,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   byId(SELECTORS.buscarDeudor)?.addEventListener('input', () => {
     const q = byId(SELECTORS.buscarDeudor).value.toLowerCase();
     const filtrados = deudoresGlobal.filter(d => {
-      const nombre = (d.nombre || '').toLowerCase();
+      const nombre = (`${d.nombre ?? ''} ${d.apellido ?? ''}`).toLowerCase();
       const identificacion = (d.identificacion || d.id || '').toString().toLowerCase();
       return nombre.includes(q) || identificacion.includes(q);
     });
-    renderTablaDeudores(filtrados);
+    renderTablaDeudores(filtrados); // mantiene paginación
   });
 
   byId(SELECTORS.buscarPrestamo)?.addEventListener('input', aplicarFiltrosPrestamos);
@@ -181,74 +198,46 @@ document.addEventListener('DOMContentLoaded', async () => {
    * Modales: abrir/cerrar
    * -----------------------*/
   const modalCobrador = byId(SELECTORS.modalCobrador);
-  byId(SELECTORS.btnToggleModalCobrador)?.addEventListener('click', () => {
-    modalCobrador?.classList.remove('hidden');
-  });
-  byId(SELECTORS.btnCloseModalCobrador)?.addEventListener('click', () => {
-    modalCobrador?.classList.add('hidden');
-    byId(SELECTORS.formCobrador)?.reset();
-  });
+  byId(SELECTORS.btnToggleModalCobrador)?.addEventListener('click', () => modalCobrador?.classList.remove('hidden'));
+  byId(SELECTORS.btnCloseModalCobrador)?.addEventListener('click', () => { modalCobrador?.classList.add('hidden'); byId(SELECTORS.formCobrador)?.reset(); });
 
   const modalDeudor = byId(SELECTORS.modalDeudor);
-  byId(SELECTORS.btnToggleModalDeudor)?.addEventListener('click', () => {
-    modalDeudor?.classList.remove('hidden');
-  });
-  byId(SELECTORS.btnCloseModalDeudor)?.addEventListener('click', () => {
-    modalDeudor?.classList.add('hidden');
-    byId(SELECTORS.formDeudor)?.reset();
-  });
+  byId(SELECTORS.btnToggleModalDeudor)?.addEventListener('click', () => modalDeudor?.classList.remove('hidden'));
+  byId(SELECTORS.btnCloseModalDeudor)?.addEventListener('click', () => { modalDeudor?.classList.add('hidden'); byId(SELECTORS.formDeudor)?.reset(); });
 
   const modalPrestamo = byId(SELECTORS.modalPrestamo);
-  byId(SELECTORS.btnToggleModalPrestamo)?.addEventListener('click', () => {
-    cargarSelectDeudores();
-    modalPrestamo?.classList.remove('hidden');
-  });
-  byId(SELECTORS.btnCloseModalPrestamo)?.addEventListener('click', () => {
-    modalPrestamo?.classList.add('hidden');
-    byId(SELECTORS.formPrestamo)?.reset();
-  });
+  byId(SELECTORS.btnToggleModalPrestamo)?.addEventListener('click', () => { cargarSelectDeudores(); modalPrestamo?.classList.remove('hidden'); });
+  byId(SELECTORS.btnCloseModalPrestamo)?.addEventListener('click', () => { modalPrestamo?.classList.add('hidden'); byId(SELECTORS.formPrestamo)?.reset(); });
 
   const modalPago = byId(SELECTORS.modalPago);
-  byId(SELECTORS.btnToggleModalPago)?.addEventListener('click', () => {
-    cargarSelectPrestamos();
-    modalPago?.classList.remove('hidden');
-  });
-  byId(SELECTORS.btnCloseModalPago)?.addEventListener('click', () => {
-    modalPago?.classList.add('hidden');
-    byId(SELECTORS.formPago)?.reset();
-  });
+  byId(SELECTORS.btnToggleModalPago)?.addEventListener('click', () => { cargarSelectPrestamos(); modalPago?.classList.remove('hidden'); });
+  byId(SELECTORS.btnCloseModalPago)?.addEventListener('click', () => { modalPago?.classList.add('hidden'); byId(SELECTORS.formPago)?.reset(); });
 
   // Modal Confirmación (Eliminar)
-  byId('mp-confirm-cancel')?.addEventListener('click', () => {
-    pendingDelete = null;
-    hideConfirmModal();
-  });
+  byId('mp-confirm-cancel')?.addEventListener('click', () => { pendingDelete = null; hideConfirmModal(); });
   byId('mp-confirm-ok')?.addEventListener('click', () => {
     if (!pendingDelete) return;
     const { tipo, id } = pendingDelete;
-    pendingDelete = null;
-    hideConfirmModal();
-    handleDelete(tipo, id);
+    pendingDelete = null; hideConfirmModal(); handleDelete(tipo, id);
   });
 });
 
 /* ============================================================================
- * Renderizadores
+ * Renderizadores + paginación
  * ==========================================================================*/
 function renderTablaDeudores(deudores) {
-  const tbody = byId(SELECTORS.tablaDeudores);
-  if (!tbody) return;
+  setView('deudores', deudores);
+  renderTablaDeudoresPage();
+  updateToolbar('deudores');
+}
+function renderTablaDeudoresPage() {
+  const tbody = byId(SELECTORS.tablaDeudores); if (!tbody) return;
   tbody.innerHTML = '';
-
-  deudores.forEach(d => {
-    let nombreCompleto = d.nombre;
-    if (d.apellido) {
-      nombreCompleto += ` ${d.apellido}`;
-    }
-
-    const fila = document.createElement('tr');
+  slicePage('deudores').forEach(d => {
+    const nombreCompleto = `${d.nombre ?? ''} ${d.apellido ?? ''}`.trim();
     const tipo = d.tipo == '1' ? 'normal' : (d.tipo == '2' ? 'especial' : '');
-    fila.innerHTML = `
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
       <td class="p-2">${escapeHTML(nombreCompleto)}</td>
       <td class="p-2">${escapeHTML(d.id)}</td>
       <td class="p-2">${escapeHTML(d.telefono)}</td>
@@ -256,94 +245,83 @@ function renderTablaDeudores(deudores) {
       <td class="p-2">${tipo}</td>
       <td class="p-2 w-28">
         <button class="inline-flex items-center justify-center rounded-lg border border-red-500 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-600 hover:text-white transition"
-                data-action="delete"
-                data-type="deudor"
-                data-id="${String(d.id)}"
-                aria-label="Eliminar deudor ${escapeHTML(d.nombre)}">
-          Eliminar
-        </button>
-      </td>
-    `;
-    tbody.appendChild(fila);
+                data-action="delete" data-type="deudor" data-id="${String(d.id)}"
+                aria-label="Eliminar deudor ${escapeHTML(nombreCompleto)}">Eliminar</button>
+      </td>`;
+    tbody.appendChild(tr);
   });
 }
 
 function renderTablaPrestamos(prestamos) {
-  const tbody = byId(SELECTORS.tablaPrestamos);
-  if (!tbody) return;
+  setView('prestamos', prestamos);
+  renderTablaPrestamosPage();
+  updateToolbar('prestamos');
+}
+function renderTablaPrestamosPage() {
+  const tbody = byId(SELECTORS.tablaPrestamos); if (!tbody) return;
   tbody.innerHTML = '';
-
-  prestamos.forEach(p => {
+  slicePage('prestamos').forEach(p => {
     const nombreDeudor = deudoresMap.get(String(p.deudor)) || `ID: ${p.deudor}`;
     const nombreCobrador = usuariosMap.get(String(p.cobrador)) || `ID: ${p.cobrador}`;
-
-    let estadoTexto = 'Desconocido';
-    let estadoClase = 'text-gray-500';
+    let estadoTexto = 'Desconocido', estadoClase = 'text-gray-500';
     if (p.estado === 1) { estadoTexto = 'Pendiente'; estadoClase = 'text-yellow-600 font-semibold'; }
     else if (p.estado === 2) { estadoTexto = 'Pagado'; estadoClase = 'text-green-600 font-semibold'; }
     else if (p.estado === 3) { estadoTexto = 'En mora'; estadoClase = 'text-red-600 font-semibold'; }
-
-    const fila = document.createElement('tr');
-    fila.innerHTML = `
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
       <td class="p-2">${escapeHTML(nombreDeudor)}</td>
       <td class="p-2">${Number(p.monto).toLocaleString('es-CO')}</td>
       <td class="p-2">${Number(p.saldo_pendiente).toLocaleString('es-CO')}</td>
       <td class="p-2">${p.meses}</td>
       <td class="p-2">${formatearFecha(p.fecha)}</td>
       <td class="p-2"><span class="${estadoClase}">${estadoTexto}</span></td>
-      <td class="p-2">${escapeHTML(nombreCobrador)}</td>
-    `;
-    tbody.appendChild(fila);
+      <td class="p-2">${escapeHTML(nombreCobrador)}</td>`;
+    tbody.appendChild(tr);
   });
 }
 
 function renderTablaPagos(pagos) {
-  const tbody = byId(SELECTORS.tablaPagos);
-  if (!tbody) return;
+  setView('pagos', pagos);
+  renderTablaPagosPage();
+  updateToolbar('pagos');
+}
+function renderTablaPagosPage() {
+  const tbody = byId(SELECTORS.tablaPagos); if (!tbody) return;
   tbody.innerHTML = '';
-
-  pagos.forEach(p => {
+  slicePage('pagos').forEach(p => {
     const nombreDeudor = getNombreDeudorDesdePago(p);
     const nombreCobrador = getNombreCobradorDesdePago(p);
-
-    const fila = document.createElement('tr');
-    fila.innerHTML = `
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
       <td class="p-2">${escapeHTML(nombreDeudor)}</td>
       <td class="p-2">${escapeHTML(nombreCobrador)}</td>
       <td class="p-2">${Number(p.monto_pagado).toLocaleString('es-CO')}</td>
-      <td class="p-2">${formatearFecha(p.fecha)}</td>
-    `;
-    tbody.appendChild(fila);
+      <td class="p-2">${formatearFecha(p.fecha)}</td>`;
+    tbody.appendChild(tr);
   });
 }
 
 function renderTablaCobradores(cobradores) {
-  const tbody = byId(SELECTORS.tablaCobradores);
-  if (!tbody) return;
+  setView('cobradores', cobradores);
+  renderTablaCobradoresPage();
+  updateToolbar('cobradores');
+}
+function renderTablaCobradoresPage() {
+  const tbody = byId(SELECTORS.tablaCobradores); if (!tbody) return;
   tbody.innerHTML = '';
-
-  cobradores.forEach(c => {
-    let nombreCompleto = c.nombre;
-    if (c.apellido) {
-      nombreCompleto += ` ${c.apellido}`;
-    }
-
-    const fila = document.createElement('tr');
-    fila.innerHTML = `
+  slicePage('cobradores').forEach(c => {
+    const nombreCompleto = `${c.nombre ?? ''} ${c.apellido ?? ''}`.trim();
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
       <td class="p-2">${escapeHTML(nombreCompleto)}</td>
       <td class="p-2">${escapeHTML(c.identificacion)}</td>
       <td class="p-2">${escapeHTML(c.telefono)}</td>
       <td class="p-2 w-28">
         <button class="inline-flex items-center justify-center rounded-lg border border-red-500 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-600 hover:text-white transition"
-                data-action="delete"
-                data-type="cobrador"
-                data-id="${String(c.id)}"
-                aria-label="Eliminar cobrador ${escapeHTML(c.nombre)}">
-          Eliminar
-        </button>
-      </td>
-    `;
-    tbody.appendChild(fila);
+                data-action="delete" data-type="cobrador" data-id="${String(c.id)}"
+                aria-label="Eliminar cobrador ${escapeHTML(nombreCompleto)}">Eliminar</button>
+      </td>`;
+    tbody.appendChild(tr);
   });
 }
 
@@ -401,7 +379,7 @@ function getNombreCobradorDesdePago(pago) {
 }
 
 /* ============================================================================
- * Formularios
+ * Formularios (sin cambios funcionales)
  * ==========================================================================*/
 // Cobrador: crear
 byId(SELECTORS.formCobrador)?.addEventListener('submit', async (e) => {
@@ -418,10 +396,7 @@ byId(SELECTORS.formCobrador)?.addEventListener('submit', async (e) => {
 
   const res = await fetch(`${API_BASE}/usuarios/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(data)
   });
 
@@ -450,10 +425,7 @@ byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
 
   const res = await fetch(`${API_BASE}/deudores/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(data)
   });
 
@@ -464,7 +436,6 @@ byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
     const nuevosDeudores = await fetchWithAuth(`${API_BASE}/deudores/`);
     deudoresGlobal = nuevosDeudores;
 
-    // maps y UI
     deudoresMap = new Map();
     deudoresGlobal.forEach(d => deudoresMap.set(String(d.id), `${d.nombre} ${d.apellido}`));
     setText(SELECTORS.deudoresCount, deudoresGlobal.length);
@@ -519,10 +490,7 @@ byId(SELECTORS.formPrestamo)?.addEventListener('submit', async (e) => {
 
   const res = await fetch(`${API_BASE}/prestamos/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(data)
   });
 
@@ -551,10 +519,7 @@ byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
 
   const res = await fetch(`${API_BASE}/pagos/`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(data)
   });
 
@@ -587,22 +552,14 @@ function showConfirmModal(tipo, id, label) {
   if (msg) msg.textContent = label || `¿Eliminar ${tipo} ${id}?`;
   overlay?.classList.remove('hidden');
 }
-
-function hideConfirmModal() {
-  byId('mp-confirm-overlay')?.classList.add('hidden');
-}
+function hideConfirmModal() { byId('mp-confirm-overlay')?.classList.add('hidden'); }
 
 async function handleDelete(tipo, id) {
   const token = localStorage.getItem('token');
-  const endpoint = tipo === 'deudor'
-    ? `${API_BASE}/deudores/${id}/`
-    : `${API_BASE}/usuarios/${id}/`;
+  const endpoint = tipo === 'deudor' ? `${API_BASE}/deudores/${id}/` : `${API_BASE}/usuarios/${id}/`;
 
   try {
-    const res = await fetch(endpoint, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const res = await fetch(endpoint, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
 
     if (res.ok) {
       if (tipo === 'deudor') {
@@ -631,20 +588,175 @@ async function handleDelete(tipo, id) {
 }
 
 /* ============================================================================
+ * Toolbar por tabla: paginación + export
+ * ==========================================================================*/
+function ensureTableToolbars() {
+  mountToolbar(SELECTORS.tablaDeudores,   'deudores',   'deudores');
+  mountToolbar(SELECTORS.tablaCobradores, 'cobradores', 'cobradores');
+  mountToolbar(SELECTORS.tablaPrestamos,  'prestamos',  'prestamos');
+  mountToolbar(SELECTORS.tablaPagos,      'pagos',      'pagos');
+}
+
+function mountToolbar(tbodyId, key, fileBase) {
+  const tbody = byId(tbodyId); if (!tbody) return;
+  const scroll = tbody.closest('.table-scroll'); if (!scroll) return;
+
+  // Toolbar (debajo de la tabla)
+  const bar = document.createElement('div');
+  bar.className = 'table-toolbar';
+  bar.innerHTML = `
+    <div class="left flex items-center gap-2">
+      <button id="exp-${key}-xls" class="export-btn">Exportar Excel</button>
+    </div>
+    <div class="right pager">
+      <label class="text-sm text-gray-600">Filas:
+        <select id="pgs-${key}" class="page-size">
+          <option>10</option><option>25</option><option>50</option><option>100</option>
+        </select>
+      </label>
+      <button id="pg-${key}-prev" class="pager-btn" aria-label="Página anterior">«</button>
+      <span id="pg-${key}-info" class="text-sm text-gray-700">1 / 1</span>
+      <button id="pg-${key}-next" class="pager-btn" aria-label="Página siguiente">»</button>
+    </div>`;
+  scroll.insertAdjacentElement('afterend', bar);
+
+  // Listeners export
+  byId(`exp-${key}-xls`)?.addEventListener('click', () => exportTable(key, 'xls', fileBase));
+
+  // Listeners paginación
+  byId(`pgs-${key}`)?.addEventListener('change', (e) => {
+    const n = parseInt(e.target.value, 10) || 10;
+    paging[key].pageSize = n; paging[key].page = 1;
+    rerenderPage(key);
+  });
+  byId(`pg-${key}-prev`)?.addEventListener('click', () => { paging[key].page = Math.max(1, paging[key].page - 1); rerenderPage(key); });
+  byId(`pg-${key}-next`)?.addEventListener('click', () => { paging[key].page = Math.min(pageCount(key), paging[key].page + 1); rerenderPage(key); });
+
+  // Inicializa selector
+  byId(`pgs-${key}`).value = String(paging[key].pageSize);
+}
+
+function updateToolbar(key) {
+  const info = byId(`pg-${key}-info`), prev = byId(`pg-${key}-prev`), next = byId(`pg-${key}-next`);
+  if (!info || !prev || !next) return;
+  const pc = pageCount(key);
+  const p = Math.min(paging[key].page, pc);
+  paging[key].page = p;
+  info.textContent = `${p} / ${pc}`;
+  prev.disabled = p <= 1;
+  next.disabled = p >= pc;
+}
+
+function rerenderPage(key) {
+  if (key === 'deudores') renderTablaDeudoresPage();
+  else if (key === 'cobradores') renderTablaCobradoresPage();
+  else if (key === 'prestamos') renderTablaPrestamosPage();
+  else if (key === 'pagos') renderTablaPagosPage();
+  updateToolbar(key);
+}
+
+/* ============================================================================
+ * Export CSV / Excel
+ * ==========================================================================*/
+function exportTable(key, fmt = 'csv', fileBase = 'export') {
+  const { headers, rows } = collectDataFor(key);
+  if (!headers.length) return;
+
+  if (fmt === 'csv') {
+    const csv = toCSV([headers, ...rows]);
+    downloadBlob(csv, `${fileBase}.csv`, 'text/csv;charset=utf-8;');
+  } else {
+    const html = toHTMLTable(headers, rows);
+    downloadBlob(html, `${fileBase}.xls`, 'application/vnd.ms-excel;charset=utf-8;');
+  }
+}
+
+function collectDataFor(key) {
+  if (key === 'deudores') {
+    const headers = ['Nombre', 'Identificación', 'Teléfono', 'Dirección', 'Tipo'];
+    const rows = (paging.deudores.view || []).map(d => [
+      `${d.nombre ?? ''} ${d.apellido ?? ''}`.trim(),
+      d.id ?? '',
+      d.telefono ?? '',
+      d.direccion ?? '',
+      d.tipo == '1' ? 'normal' : (d.tipo == '2' ? 'especial' : '')
+    ]);
+    return { headers, rows };
+  }
+  if (key === 'cobradores') {
+    const headers = ['Nombre', 'Identificación', 'Teléfono'];
+    const rows = (paging.cobradores.view || []).map(c => [
+      `${c.nombre ?? ''} ${c.apellido ?? ''}`.trim(),
+      c.identificacion ?? '',
+      c.telefono ?? ''
+    ]);
+    return { headers, rows };
+  }
+  if (key === 'prestamos') {
+    const headers = ['Deudor', 'Monto', 'Saldo Pendiente', 'Meses', 'Fecha', 'Estado', 'Cobrador'];
+    const rows = (paging.prestamos.view || []).map(p => [
+      deudoresMap.get(String(p.deudor)) || `ID: ${p.deudor}`,
+      Number(p.monto) || 0,
+      Number(p.saldo_pendiente) || 0,
+      p.meses ?? '',
+      formatearFecha(p.fecha),
+      p.estado === 1 ? 'Pendiente' : (p.estado === 2 ? 'Pagado' : (p.estado === 3 ? 'En mora' : 'Desconocido')),
+      usuariosMap.get(String(p.cobrador)) || `ID: ${p.cobrador}`
+    ]);
+    return { headers, rows };
+  }
+  if (key === 'pagos') {
+    const headers = ['Deudor', 'Cobrador', 'Monto', 'Fecha'];
+    const rows = (paging.pagos.view || []).map(p => [
+      getNombreDeudorDesdePago(p),
+      getNombreCobradorDesdePago(p),
+      Number(p.monto_pagado) || 0,
+      formatearFecha(p.fecha)
+    ]);
+    return { headers, rows };
+  }
+  return { headers: [], rows: [] };
+}
+
+function toCSV(matrix) {
+  return matrix.map(row =>
+    row.map(cell => {
+      let v = cell ?? '';
+      if (typeof v === 'number') v = String(v);
+      v = String(v);
+      if (/[",\n;]/.test(v)) v = `"${v.replace(/"/g, '""')}"`;
+      return v;
+    }).join(',')
+  ).join('\n');
+}
+
+function toHTMLTable(headers, rows) {
+  const h = `<tr>${headers.map(h => `<th>${escapeHTML(h)}</th>`).join('')}</tr>`;
+  const r = rows.map(cells => `<tr>${cells.map(c => `<td>${escapeHTML(c)}</td>`).join('')}</tr>`).join('');
+  return `<!doctype html><html><head><meta charset="utf-8"></head><body><table>${h}${r}</table></body></html>`;
+}
+
+function downloadBlob(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+/* ============================================================================
  * Utilidades UI
  * ==========================================================================*/
 function cargarOpcionesCobradores(usuarios) {
   const select = byId(SELECTORS.selectDeudorCobrador);
   if (!select) return;
   select.innerHTML = '<option value="">Seleccionar Cobrador</option>';
-  usuarios
-    .filter(u => u.rol === 2)
-    .forEach(c => {
-      const option = document.createElement('option');
-      option.value = c.id;
-      option.textContent = `${c.nombre} ${c.apellido}`;
-      select.appendChild(option);
-    });
+  usuarios.filter(u => u.rol === 2).forEach(c => {
+    const option = document.createElement('option');
+    option.value = c.id;
+    option.textContent = `${c.nombre} ${c.apellido}`;
+    select.appendChild(option);
+  });
 }
 
 function poblarFiltroCobrador(usuarios) {
@@ -661,8 +773,7 @@ function poblarFiltroCobrador(usuarios) {
 
 function mostrarToast(tipo = 'exito', mensaje = '') {
   const id = tipo === 'error' ? SELECTORS.toastError : SELECTORS.toastExito;
-  const toast = byId(id);
-  if (!toast) return;
+  const toast = byId(id); if (!toast) return;
   toast.textContent = mensaje || (tipo === 'error' ? 'Ocurrió un error' : 'Acción exitosa');
   toast.classList.remove('hidden');
   setTimeout(() => toast.classList.add('hidden'), 3000);
@@ -673,12 +784,8 @@ function byId(id) { return document.getElementById(id); }
 function setText(id, value) { const el = byId(id); if (el) el.textContent = String(value); }
 function escapeHTML(v) {
   if (v === null || v === undefined) return '';
-  return String(v)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+  return String(v).replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
 
 /* ============================================================================
@@ -686,7 +793,6 @@ function escapeHTML(v) {
  * ==========================================================================*/
 function ensureConfirmUI() {
   if (byId('mp-confirm-overlay')) return;
-
   const wrap = document.createElement('div');
   wrap.id = 'mp-confirm-overlay';
   wrap.className = 'fixed inset-0 z-[100] hidden bg-black/50 backdrop-blur-sm';
@@ -698,7 +804,6 @@ function ensureConfirmUI() {
         <button id="mp-confirm-cancel" class="rounded-xl border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">Cancelar</button>
         <button id="mp-confirm-ok" class="rounded-xl bg-black px-4 py-2 text-white hover:bg-gray-900">Eliminar</button>
       </div>
-    </div>
-  `;
+    </div>`;
   document.body.appendChild(wrap);
 }
