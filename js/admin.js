@@ -529,7 +529,6 @@ byId(SELECTORS.formPrestamo)?.addEventListener('submit', async (e) => {
     interes: parseInt(byId(SELECTORS.inputPrestamoInteres).value, 10),
     meses: parseInt(byId(SELECTORS.inputPrestamoMeses).value, 10),
     fecha: byId(SELECTORS.inputPrestamoFecha).value,
-    cobrador: '1'
   };
 
   const res = await fetch(`${API_BASE}/prestamos/`, {
