@@ -1,339 +1,320 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Cobrador • InversionesMP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="color-scheme" content="light dark">
+  <style>
+    :root { color-scheme: light; }
 
-    <meta charset="UTF-8" />
-    <title>Dashboard Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-  </head>
+    /* Scrollbar sutil */
+    .table-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,.25) transparent; }
+    .table-scroll::-webkit-scrollbar { height: 8px; }
+    .table-scroll::-webkit-scrollbar-track { background: transparent; }
+    .table-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,.25); border-radius: 9999px; }
+    .table-scroll:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,.40); }
 
-  <body class="bg-gray-50 font-sans">
-    <!-- Header -->
-    <header
-      class="bg-gray-900 text-white px-6 py-5 flex justify-between items-center shadow-md"
-    >
-      <h1 class="text-xl font-semibold tracking-tight">Inversiones MP</h1>
-      <button
-        id="logout-btn"
-        class="bg-white text-gray-900 px-4 py-1 rounded shadow"
-      >
-        Cerrar sesión
-      </button>
-    </header>
+    /* Inputs estilo Material */
+    .md-input, .md-select { background: rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.18); border-radius: 12px; padding: 0.5rem 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,.04) inset; transition: border-color .2s, box-shadow .2s, background-color .2s; }
+    .md-input::placeholder { color: #6b7280; }
+    .md-input:focus, .md-select:focus { outline: none; border-color: rgba(0,0,0,.50); box-shadow: 0 0 0 4px rgba(0,0,0,.08); background: rgba(0,0,0,.02); }
 
+    /* Cards */
+    .stat-card { position: relative; background:#fff; border:1px solid #e5e7eb; border-radius: .5rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); padding: 1rem 1rem 1.25rem; }
+    .stat-title { font-size: .875rem; font-weight:600; color:#374151; margin:0; }
+    .stat-number { font-size: 1.75rem; font-weight: 700; color:#111827; line-height:1.2; margin-top:.25rem; }
+    .stat-icon { position:absolute; top:.75rem; right:.75rem; width:1.25rem; height:1.25rem; color:#6b7280; opacity:.9; }
+
+    /* Tablas */
+    .data-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    .data-table thead { border-bottom: 1px solid #e5e7eb; background:#fff; }
+    .data-table th { height: 3rem; padding: 0 1rem; text-align:left; font-weight:500; color:#6b7280; vertical-align:middle; }
+    .data-table td { padding: .875rem 1rem; vertical-align: middle; color:#111827; }
+    .data-table tbody tr { border-bottom: 1px solid #e5e7eb; transition: background-color .15s ease; }
+    .data-table tbody tr:hover { background:#f9fafb; }
+
+    /* Header sticky en tablas */
+    .data-table thead th { position: sticky; top: 0; background: #fff; z-index: 10; box-shadow: 0 1px 0 #e5e7eb; }
+
+    /* Alturas de tablas */
+    .table-scroll { max-height: 60vh; overflow-y: auto; }
+
+    /* Toolbar inferior (paginación + export) */
+    .table-toolbar { display: flex; gap: .75rem; align-items: center; justify-content: space-between; padding: .75rem 1rem; border-top: 1px solid #e5e7eb; background: #fff; }
+    .pager { display: inline-flex; gap: .5rem; align-items: center; }
+    .pager-btn { border: 1px solid #e5e7eb; background:#fff; padding: .375rem .625rem; border-radius: .5rem; }
+    .pager-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .export-btn { border: 1px solid #111; color:#111; background:#fff; padding:.375rem .625rem; border-radius:.5rem; }
+    .export-btn:hover { background:#111; color:#fff; }
+    .page-size { border:1px solid #e5e7eb; border-radius:.5rem; padding:.375rem .5rem; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 antialiased">
+  <!-- Header -->
+  <header class="sticky top-0 z-40 border-b border-gray-200 bg-black text-white">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <h1 class="text-lg sm:text-xl font-semibold tracking-tight">
+        InversionesMP • <span>Panel Cobrador</span>
+      </h1>
+      <div class="flex items-center gap-3">
+        <span id="usuario-nombre" class="hidden sm:inline text-sm opacity-90"></span>
+        <button id="logout-btn" class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-black shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black">
+          <span>Salir</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido -->
+  <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-8">
     <!-- Resumen -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 p-4">
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
-        <p class="text-base text-gray-600 sm:text-sm">Clientes registrados</p>
-        <p class="text-emerald-600 font-bold text-3xl sm:text-2xl">
-          <span id="deudores-count">0</span>
-        </p>
-      </div>
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
-        <p class="text-base text-gray-600 sm:text-sm">Préstamos</p>
-        <p class="text-emerald-600 font-bold text-3xl sm:text-2xl">
-          <span id="prestamos-count">0</span>
-        </p>
-      </div>
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
-        <p class="text-base text-gray-600 sm:text-sm">Pagos</p>
-        <p class="text-emerald-600 font-bold text-3xl sm:text-2xl">
-          <span id="pagos-count">0</span>
-        </p>
-      </div>
-
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
-        <p class="text-base text-gray-600 sm:text-sm">Total recaudado (mes)</p>
-        <p class="text-emerald-600 font-bold text-3xl sm:text-2xl">
-          $<span id="total-recaudado">0</span>
-        </p>
+    <section aria-labelledby="resumen-title">
+      <h2 id="resumen-title" class="sr-only">Resumen</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div class="stat-card">
+          <h3 class="stat-title">Clientes registrados</h3>
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <div class="stat-number"><span id="deudores-count">0</span></div>
+        </div>
+        <div class="stat-card">
+          <h3 class="stat-title">Préstamos</h3>
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          <div class="stat-number"><span id="prestamos-count">0</span></div>
+        </div>
+        <div class="stat-card">
+          <h3 class="stat-title">Pagos</h3>
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <div class="stat-number"><span id="pagos-count">0</span></div>
+        </div>
+        <div class="stat-card">
+          <h3 class="stat-title">Total recaudado (mes)</h3>
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <div class="stat-number">$<span id="total-recaudado">0</span></div>
+        </div>
       </div>
     </section>
 
-<section class="px-4 py-6">
-  <div class="mb-6">
-    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
-      <h2 class="text-lg font-semibold text-gray-900 mb-2">Lista de Deudores</h2>
-      <label
-          for="buscar-deudor"
-          class="block text-sm font-medium text-gray-700 mb-"
-          >Buscar deudor:</label
-        >
-        <input
-          type="text"
-          id="buscar-deudor"
-          placeholder="Nombre o identificación"
-          class="border border-gray-300 rounded-md px-4 py-3 text-base w-full max-w-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
-        />
-      <!-- Botón para abrir modal -->
-<button id="btn-toggle-modal-deudor"
-  class="bg-gray-900 text-white px-5 py-3 rounded shadow hover:bg-gray-800 text-base active:scale-95 transition duration-200 mb-3 w-full sm:w-auto">
-  Agregar Deudor
-</button>
-
-<!-- Modal -->
-<div id="modal-deudor"
-  class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
-  <div class="bg-white rounded-lg border border-gray-200 shadow-sm-lg w-full max-w-md p-6 space-y-4 relative mx-4">
-    <button id="btn-close-modal-deudor"
-      class="absolute top-2 right-3 text-gray-400 hover:text-gray-700 text-xl font-bold">
-      &times;
-    </button>
-    <h2 class="text-lg font-semibold text-gray-900">Nuevo Deudor</h2>
-
-    <form id="form-deudor" class="space-y-3">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <input type="text" id="deudor-nombre" placeholder="Nombre" required
-          class="border border-gray-300 rounded px-3 py-2 w-full" />
-        <input type="text" id="deudor-apellido" placeholder="Apellido" required
-          class="border border-gray-300 rounded px-3 py-2 w-full" />
-        <input type="text" id="deudor-identificacion" placeholder="Identificación" required
-          class="border border-gray-300 rounded px-3 py-2 w-full" />
-        <input type="text" id="deudor-telefono" placeholder="Teléfono"
-          class="border border-gray-300 rounded px-3 py-2 w-full" />
-        <input type="text" id="deudor-direccion" placeholder="Dirección"
-          class="border border-gray-300 rounded px-3 py-2 w-full" />
+    <!-- Acciones rápidas -->
+    <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <!-- Deudores -->
+      <div class="lg:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="px-5 pt-5 pb-4 border-b border-gray-100 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-black">Deudores</h2>
+            <p class="text-sm text-gray-500">Busca por nombre.</p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <label class="sr-only" for="buscar-deudor">Buscar deudor</label>
+            <input id="buscar-deudor" type="text" inputmode="search" placeholder="Nombre" class="md-input w-full sm:w-72" />
+            <button id="btn-toggle-modal-deudor" class="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-900 active:scale-[0.98]">Agregar Deudor</button>
+            <button id="btn-toggle-modal-prestamo" class="rounded-xl border border-black px-4 py-2 text-sm font-medium text-black hover:bg-black hover:text-white transition">Hacer Préstamo</button>
+          </div>
+        </div>
+        <div class="table-scroll overflow-x-auto">
+          <table class="data-table min-w-[860px] w-full">
+            <thead class="bg-gray-50 text-gray-700">
+              <tr class="border-b border-gray-200">
+                <th class="p-3 text-left">Nombre Completo</th>
+                <th class="p-3 text-left">Identificación</th>
+                <th class="p-3 text-left">Teléfono</th>
+                <th class="p-3 text-left">Dirección</th>
+                <th class="p-3 text-left">Tipo</th>
+                <th class="p-3 text-left w-28">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-deudores-container" class="divide-y divide-gray-100"></tbody>
+          </table>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <select id="deudor-tipo" required
-          class="border border-gray-300 rounded px-3 py-2 w-full">
-          <option value="">Tipo de Deudor</option>
-          <option value="1">Normal</option>
-          <option value="2">Especial</option>
-        </select>
-
-
+      <!-- Tarjeta auxiliar (espaciado) -->
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 flex flex-col justify-center">
+        <h3 class="text-base font-semibold text-black">Accesos rápidos</h3>
+        <p class="text-sm text-gray-600 mt-1">Registra pagos, crea préstamos o nuevos deudores desde los botones superiores.</p>
       </div>
+    </section>
 
-      <button type="submit"
-        class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Guardar</button>
-    </form>
-  </div>
-</div>
-      
-<button id="btn-toggle-modal-prestamo"
-  class="bg-gray-900 text-white px-5 py-3 rounded shadow hover:bg-gray-800 text-base active:scale-95 transition duration-200 mb-3 w-full sm:w-auto">
-  Hacer Préstamo
-</button>
-
-<div class="overflow-x-auto border border-gray-200 rounded w-full block">
-        <table class="min-w-[700px] table-auto text-base sm:text-sm">
-          <thead class="bg-gray-100 text-gray-700 font-semibold">
-            <tr>
-              <th class="p-2 text-left">Nombre</th>
-              <th class="p-2 text-left">Identificación</th>
-              <th class="p-2 text-left">Teléfono</th>
-              <th class="p-2 text-left">Dirección</th>
-              <th class="p-2 text-left">Tipo</th>
+    <!-- Préstamos -->
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div class="px-5 pt-5 pb-4 border-b border-gray-100">
+        <h2 class="text-lg font-semibold text-black">Préstamos</h2>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="buscar-prestamo" class="block text-xs font-medium text-gray-700 mb-1">Buscar por nombre</label>
+            <input id="buscar-prestamo" type="text" placeholder="Nombre del deudor" class="md-input w-full" />
+          </div>
+          <div>
+            <label for="filtro-estado" class="block text-xs font-medium text-gray-700 mb-1">Estado</label>
+            <select id="filtro-estado" class="md-select w-full">
+              <option value="">Todos</option>
+              <option value="1">Pendiente</option>
+              <option value="2">Pagado</option>
+              <option value="3">En mora</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="table-scroll overflow-x-auto">
+        <table class="data-table min-w-[880px] w-full">
+          <thead class="bg-gray-50 text-gray-700">
+            <tr class="border-b border-gray-200">
+              <th class="p-3 text-left">Deudor</th>
+              <th class="p-3 text-left">Monto</th>
+              <th class="p-3 text-left">Saldo Pendiente</th>
+              <th class="p-3 text-left">Meses</th>
+              <th class="p-3 text-left">Fecha</th>
+              <th class="p-3 text-left">Estado</th>
             </tr>
           </thead>
-          <tbody id="tabla-deudores-container" class="text-gray-800">
-            <!-- JS insertará filas -->
-          </tbody>
+          <tbody id="tabla-prestamos-container" class="divide-y divide-gray-100"></tbody>
         </table>
-
-      </div>
-  </div>
-</section>
-
-
-    <!-- Tabla de préstamos -->
-    <section class="px-4 py-6">
-      
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
-        
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">
-          Lista de Préstamos
-        </h2>
-        <div
-        class="bg-white p-4 grid grid-cols-1 md:grid-cols-3 gap-4"
-      >
-        <div>
-          <label
-            for="buscar-prestamo"
-            class="block text-sm font-medium text-gray-700 mb-1"
-            >Buscar préstamo por nombre:</label
-          >
-          <input
-            type="text"
-            id="buscar-prestamo"
-            placeholder="Nombre del deudor"
-            class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
-          />
-        </div>
-        <div>
-          <label
-            for="filtro-estado"
-            class="block text-sm font-medium text-gray-700 mb-1"
-            >Estado:</label
-          >
-          <select
-            id="filtro-estado"
-            class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
-          >
-            <option value="">Todos</option>
-            <option value="1">Pendiente</option>
-            <option value="2">Pagado</option>
-            <option value="3">En mora</option>
-          </select>
-        </div>
-        <div>
-          <label
-            for="filtro-cobrador"
-            class="block text-sm font-medium text-gray-700 mb-1"
-            >Cobrador:</label
-          >
-          <select
-            id="filtro-cobrador"
-            class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
-          >
-            <option value="">Todos</option>
-          </select>
-        </div>
-      </div>
-        <div class="overflow-x-auto border border-gray-200 rounded w-full block">
-          <table class="min-w-[800px] table-auto text-base sm:text-sm border border-gray-200">
-            <thead class="bg-gray-100 text-gray-700 font-semibold">
-              <tr>
-                <th class="p-2 text-left">Deudor</th>
-                <th class="p-2 text-left">Monto</th>
-                <th class="p-2 text-left">Saldo Pendiente</th>
-                <th class="p-2 text-left">Meses</th>
-                <th class="p-2 text-left">Fecha</th>
-                <th class="p-2 text-left">Estado</th>
-                <th class="p-2 text-left">Cobrador</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-prestamos-container" class="text-gray-800">
-              <!-- JS insertará las filas -->
-            </tbody>
-          </table>
-        </div>
       </div>
     </section>
 
-    <!-- Tabla de pagos -->
-    <section class="px-4 py-6">
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-4 transition duration-300 hover:shadow-md">
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">
-          Pagos
-        </h2>
-        <div class=" p-4 max-w-xs">
-        <label for="filtro-mes" class="text-sm font-medium text-gray-700 mb-1"
-          >Filtrar pagos por mes:</label
-        >
-        <select
-          id="filtro-mes"
-          class="border border-gray-300 rounded-md px-3 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
-        >
-          <option value="">Todos</option>
-          <option value="1">Enero</option>
-          <option value="2">Febrero</option>
-          <option value="3">Marzo</option>
-          <option value="4">Abril</option>
-          <option value="5">Mayo</option>
-          <option value="6">Junio</option>
-          <option value="7">Julio</option>
-          <option value="8">Agosto</option>
-          <option value="9">Septiembre</option>
-          <option value="10">Octubre</option>
-          <option value="11">Noviembre</option>
-          <option value="12">Diciembre</option>
+    <!-- Pagos -->
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div class="px-5 pt-5 pb-4 border-b border-gray-100 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-black">Pagos</h2>
+          <div class="mt-3 w-full sm:w-64">
+            <label for="filtro-mes" class="block text-xs font-medium text-gray-700 mb-1">Filtrar por mes</label>
+            <select id="filtro-mes" class="md-select w-full">
+              <option value="">Todos</option>
+              <option value="1">Enero</option>
+              <option value="2">Febrero</option>
+              <option value="3">Marzo</option>
+              <option value="4">Abril</option>
+              <option value="5">Mayo</option>
+              <option value="6">Junio</option>
+              <option value="7">Julio</option>
+              <option value="8">Agosto</option>
+              <option value="9">Septiembre</option>
+              <option value="10">Octubre</option>
+              <option value="11">Noviembre</option>
+              <option value="12">Diciembre</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <button id="btn-toggle-modal-pago" class="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-900 active:scale-[0.98]">Registrar Pago</button>
+        </div>
+      </div>
+      <div class="table-scroll overflow-x-auto">
+        <table class="data-table min-w-[640px] w-full">
+          <thead class="bg-gray-50 text-gray-700">
+            <tr class="border-b border-gray-200">
+              <th class="p-3 text-left">Deudor</th>
+              <th class="p-3 text-left">Monto</th>
+              <th class="p-3 text-left">Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-pagos-container" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-8 border-t border-gray-200 bg-black text-white">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 text-center text-sm">
+      © 2025 InversionesMP. Todos los derechos reservados HozballSolution.
+    </div>
+  </footer>
+
+  <!-- Toasts -->
+  <div id="toast-exito" class="fixed bottom-6 right-6 hidden rounded-xl bg-emerald-600 px-4 py-3 text-white shadow-lg">✅ Acción exitosa</div>
+  <div id="toast-error" class="fixed bottom-6 right-6 hidden rounded-xl bg-red-600 px-4 py-3 text-white shadow-lg">❌ Ha ocurrido un error.</div>
+
+  <!-- Modales -->
+  <!-- Modal Deudor -->
+  <div id="modal-deudor" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm">
+    <div class="mx-auto mt-20 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Nuevo Deudor</h3>
+        <button id="btn-close-modal-deudor" class="rounded-lg p-1 text-gray-500 hover:bg-gray-100" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="form-deudor" class="space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <input id="deudor-nombre" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Nombre" required />
+          <input id="deudor-apellido" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Apellido" required />
+          <input id="deudor-identificacion" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Identificación" required />
+          <input id="deudor-telefono" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Teléfono" />
+          <input id="deudor-direccion" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Dirección" />
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <select id="deudor-tipo" class="rounded-xl border border-gray-300 px-3 py-2" required>
+            <option value="">Tipo de Deudor</option>
+            <option value="1">Normal</option>
+            <option value="2">Especial</option>
+          </select>
+          <!-- Oculto: se setea a este cobrador -->
+          <select id="deudor-cobrador" class="rounded-xl border border-gray-300 px-3 py-2 hidden">
+            <option value="">Seleccionar Cobrador</option>
+          </select>
+        </div>
+        <button class="w-full rounded-xl bg-black px-4 py-2 text-white" type="submit">Guardar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Préstamo -->
+  <div id="modal-prestamo" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm">
+    <div class="mx-auto mt-20 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
+      <h3 class="text-lg font-semibold mb-4">Registrar Préstamo</h3>
+      <form id="form-prestamo" class="space-y-3">
+        <select id="prestamo-deudor" required class="w-full rounded-xl border border-gray-300 px-3 py-2">
+          <option value="">Seleccione deudor</option>
         </select>
-      </div>
-        
-<button id="btn-toggle-modal-pago"
-  class="bg-gray-900 text-white px-5 py-3 rounded shadow hover:bg-gray-800 text-base active:scale-95 transition duration-200 mb-3 w-full sm:w-auto">
-  Registrar Pago
-</button>
-
-<div class="overflow-x-auto border border-gray-200 rounded w-full block">
-          <table class="min-w-[700px] table-auto text-base sm:text-sm">
-            <thead class="bg-gray-50 text-gray-700 font-semibold">
-              <tr>
-                <th class="p-2 text-left">Deudor</th>
-                <th class="p-2 text-left">Cobrador</th>
-                <th class="p-2 text-left">Monto</th>
-                <th class="p-2 text-left">Fecha</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-pagos-container" class="text-gray-800">
-              <!-- JS insertará las filas -->
-            </tbody>
-          </table>
+        <input id="prestamo-monto" type="number" required placeholder="Monto" class="w-full rounded-xl border border-gray-300 px-3 py-2" />
+        <select id="prestamo-interes" required class="w-full rounded-xl border border-gray-300 px-3 py-2">
+          <option value="">Interés (%)</option>
+          <option value="10">10%</option>
+          <option value="15">15%</option>
+          <option value="20">20%</option>
+        </select>
+        <select id="prestamo-meses" required class="w-full rounded-xl border border-gray-300 px-3 py-2">
+          <option value="">Plazo (meses)</option>
+          <option value="1">1 mes</option>
+          <option value="2">2 meses</option>
+        </select>
+        <input id="prestamo-fecha" type="date" required class="w-full rounded-xl border border-gray-300 px-3 py-2" />
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="submit" class="rounded-xl bg-black px-4 py-2 text-white">Guardar</button>
+          <button id="cerrar-modal-prestamo" type="button" class="rounded-xl border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">Cancelar</button>
         </div>
-      </div>
-    </section>
-
-    <script type="module" src="js/cobrador.js"></script>
-
-    <!-- Toast de éxito -->
-<div id="toast-exito"
-  class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-3 rounded-lg shadow-md hidden z-50 transition-opacity duration-500 ease-in-out">
-  ✅ Deudor creado exitosamente
-</div>
-
-  
-<!-- Toast error -->
-<div id="toast-error"
-  class="fixed bottom-6 right-6 bg-red-600 text-white px-4 py-3 rounded-lg shadow-md hidden z-50 transition-opacity duration-500 ease-in-out">
-  ❌ Ha ocurrido un error.
-</div>
-
-<!-- Modal de Préstamo -->
-<div id="modal-prestamo" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white p-6 rounded shadow-lg w-full max-w-md">
-    <h2 class="text-xl font-semibold mb-4">Registrar Préstamo</h2>
-    <form id="form-prestamo" class="space-y-4">
-      <select id="prestamo-deudor" required class="w-full p-2 border rounded">
-        <option value="">Seleccione deudor</option>
-      </select>
-      <input type="number" id="prestamo-monto" required placeholder="Monto" class="w-full p-2 border rounded" />
-      <select id="prestamo-interes" required class="w-full p-2 border rounded">
-        <option value="">Interés (%)</option>
-        <option value="10">10%</option>
-        <option value="15">15%</option>
-        <option value="20">20%</option>
-      </select>
-      <select id="prestamo-meses" required class="w-full p-2 border rounded">
-        <option value="">Plazo (meses)</option>
-        <option value="1">1 mes</option>
-        <option value="2">2 meses</option>
-      </select>
-      <input type="date" id="prestamo-fecha" required class="w-full p-2 border rounded" />
-
-      <div class="flex justify-end space-x-2">
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Guardar</button>
-        <button type="button" id="cerrar-modal-prestamo" class="bg-gray-400 text-white px-4 py-2 rounded">Cancelar</button>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
-</div>
 
-<!-- Modal Pago -->
-<div id="modal-pago"
-  class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
-  <div class="bg-white rounded-lg border border-gray-200 shadow-sm w-full max-w-md p-6 space-y-4 relative mx-4">
-    <button id="btn-close-modal-pago"
-      class="absolute top-2 right-3 text-gray-400 hover:text-gray-700 text-xl font-bold">&times;</button>
-    <h2 class="text-lg font-semibold text-gray-900">Nuevo Pago</h2>
-    <form id="form-pago" class="space-y-3">
-      <div class="grid grid-cols-1 gap-3">
-        <select id="pago-prestamo" required class="border border-gray-300 rounded px-3 py-2 w-full">
+  <!-- Modal Pago -->
+  <div id="modal-pago" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm">
+    <div class="mx-auto mt-20 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Nuevo Pago</h3>
+        <button id="btn-close-modal-pago" class="rounded-lg p-1 text-gray-500 hover:bg-gray-100" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="form-pago" class="space-y-3">
+        <select id="pago-prestamo" required class="w-full rounded-xl border border-gray-300 px-3 py-2">
           <option value="">Seleccionar Préstamo</option>
         </select>
-        <input type="number" id="pago-monto" placeholder="Monto Pagado" required class="border border-gray-300 rounded px-3 py-2 w-full" />
-        <input type="date" id="pago-fecha" required class="border border-gray-300 rounded px-3 py-2 w-full" />
-      </div>
-      <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Guardar</button>
-    </form>
+        <input id="pago-monto" type="number" required placeholder="Monto Pagado" class="w-full rounded-xl border border-gray-300 px-3 py-2" />
+        <input id="pago-fecha" type="date" required class="w-full rounded-xl border border-gray-300 px-3 py-2" />
+        <button type="submit" class="w-full rounded-xl bg-black px-4 py-2 text-white">Guardar</button>
+      </form>
+    </div>
   </div>
-</div>
 
+  <!-- Script cobrador -->
+  <script type="module" src="./js/cobrador.js"></script>
+  <script>
+    // Mostrar nombre en header
+    document.addEventListener('DOMContentLoaded', function() {
+      const nombre = localStorage.getItem('nombre');
+      const el = document.getElementById('usuario-nombre');
+      if (nombre && el) { el.textContent = nombre; el.classList.remove('hidden'); }
+    });
+  </script>
 </body>
-
 </html>

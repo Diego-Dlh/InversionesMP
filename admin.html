@@ -71,7 +71,7 @@
   <!-- Header -->
   <header class="sticky top-0 z-40 border-b border-gray-200 bg-black text-white">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <h1 class="text-lg sm:text-xl font-semibold tracking-tight">InversionesMP • Panel Admin</h1>
+      <h1 class="text-lg sm:text-xl font-semibold tracking-tight">InversionesMP</h1>
       <button id="logout-btn" class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-black shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black">
         <span>Salir</span>
       </button>
@@ -80,6 +80,9 @@
 
   <!-- Contenido principal -->
   <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+    <!-- Mensaje de bienvenida -->
+    <div id="mensaje-bienvenida" class="text-left py-2 text-xl font-medium text-gray-800"></div>
+
     <!-- Resumen -->
     <section aria-labelledby="resumen-title">
       <h2 id="resumen-title" class="sr-only">Resumen</h2>
@@ -112,6 +115,7 @@
       </div>
     </section>
 
+    
     <!-- Zona acciones rápidas -->
     <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <!-- Deudores -->
@@ -381,6 +385,15 @@
   </div>
 
   <!-- Script: mantener la misma ruta para compatibilidad con tu JS actual -->
-  <script type="module" src="js/admin.js"></script>
+  <script type="module" src="./js/admin.js"></script>
+  <script>
+    // Mostrar mensaje de bienvenida con el nombre del usuario
+    document.addEventListener('DOMContentLoaded', function() {
+      const nombreUsuario = localStorage.getItem('nombre');
+      if (nombreUsuario) {
+        document.getElementById('mensaje-bienvenida').textContent = `¡Bienvenido, ${nombreUsuario}!`;
+      }
+    });
+  </script>
 </body>
 </html>
