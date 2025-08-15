@@ -2,86 +2,99 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Admin • InversionesMP</title>
+  <title>InversionesMP • Panel Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <meta name="color-scheme" content="light dark">
   <style>
-  :root { color-scheme: light; }
+    :root { color-scheme: light; }
 
-  /* Scrollbar sutil */
-  .table-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,.25) transparent; }
-  .table-scroll::-webkit-scrollbar { height: 8px; }
-  .table-scroll::-webkit-scrollbar-track { background: transparent; }
-  .table-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,.25); border-radius: 9999px; }
-  .table-scroll:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,.40); }
+    /* Scrollbar sutil */
+    .table-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,.25) transparent; }
+    .table-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+    .table-scroll::-webkit-scrollbar-track { background: transparent; }
+    .table-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,.25); border-radius: 9999px; }
+    .table-scroll:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,.40); }
 
-  /* Campos estilo Material filled */
-  .md-input, .md-select { background: rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.18); border-radius: 12px; padding: 0.5rem 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,.04) inset; transition: border-color .2s, box-shadow .2s, background-color .2s; }
-  .md-input::placeholder { color: #6b7280; }
-  .md-input:focus, .md-select:focus { outline: none; border-color: rgba(0,0,0,.50); box-shadow: 0 0 0 4px rgba(0,0,0,.08); background: rgba(0,0,0,.02); }
+    /* Inputs estilo material (negro/blanco) */
+    .md-input, .md-select { background: rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.18); border-radius: 12px; padding: 0.6rem 0.8rem; box-shadow: 0 1px 2px rgba(0,0,0,.04) inset; transition: border-color .2s, box-shadow .2s, background-color .2s; }
+    .md-input::placeholder { color: #6b7280; }
+    .md-input:focus, .md-select:focus { outline: none; border-color: rgba(0,0,0,.5); box-shadow: 0 0 0 4px rgba(0,0,0,.08); background: rgba(0,0,0,.02); }
 
-  /* Botones pequeños */
-  .btn-xs { font-size: 0.75rem; line-height: 1rem; padding: 0.375rem 0.625rem; border-radius: 0.5rem; }
-  .btn-danger { border: 1px solid #ef4444; color: #ef4444; background: transparent; transition: background-color .2s, color .2s; }
-  .btn-danger:hover { background: #ef4444; color: #fff; }
+    /* Cards resumen */
+    .stat-card { position: relative; background:#fff; border:1px solid #e5e7eb; border-radius: .5rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); padding: 1rem 1rem 1.25rem; }
+    .stat-title { font-size: .875rem; font-weight:600; color:#374151; margin:0; }
+    .stat-number { font-size: 1.6rem; font-weight: 700; color:#111827; line-height:1.2; margin-top:.25rem; }
+    .stat-icon { position:absolute; top:.75rem; right:.75rem; width:1.25rem; height:1.25rem; color:#6b7280; opacity:.9; }
 
-  /* Tarjetas resumen estilo dashboard */
-  .stat-card { position: relative; background:#fff; border:1px solid #e5e7eb; border-radius: .5rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); padding: 1rem 1rem 1.25rem; }
-  .stat-title { font-size: .875rem; font-weight:600; color:#374151; margin:0; }
-  .stat-number { font-size: 1.75rem; font-weight: 700; color:#111827; line-height:1.2; margin-top:.25rem; }
-  .stat-desc { font-size:.75rem; color:#6b7280; margin-top:.125rem; }
-  .stat-icon { position:absolute; top:.75rem; right:.75rem; width:1.25rem; height:1.25rem; color:#6b7280; opacity:.9; }
+    /* Tablas */
+    .data-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    .data-table thead { border-bottom: 1px solid #e5e7eb; background:#fff; }
+    .data-table th { height: 3rem; padding: 0 1rem; text-align:left; font-weight:500; color:#6b7280; vertical-align:middle; }
+    .data-table td { padding: .875rem 1rem; vertical-align: middle; color:#111827; }
+    .data-table tbody tr { border-bottom: 1px solid #e5e7eb; transition: background-color .15s ease; }
+    .data-table tbody tr:hover { background:#f9fafb; }
 
-  /* Tablas estilo dashboard */
-  .data-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
-  .data-table thead { border-bottom: 1px solid #e5e7eb; background:#fff; }
-  .data-table th { height: 3rem; padding: 0 1rem; text-align:left; font-weight:500; color:#6b7280; vertical-align:middle; }
-  .data-table td { padding: .875rem 1rem; vertical-align: middle; color:#111827; }
-  .data-table tbody tr { border-bottom: 1px solid #e5e7eb; transition: background-color .15s ease; }
-  .data-table tbody tr:hover { background:#f9fafb; }
+    /* Header sticky de las tablas */
+    .data-table thead th { position: sticky; top: 0; background: #fff; z-index: 10; box-shadow: 0 1px 0 #e5e7eb; }
 
-    /* Header sticky en tablas */
-  .data-table thead th {
-    position: sticky; top: 0; background: #fff; z-index: 10;
-    box-shadow: 0 1px 0 #e5e7eb;
-  }
+    /* Altura scroll tablas */
+    .table-scroll { max-height: 60vh; overflow: auto; }
 
-  /* Viewport vertical por tabla (sin tocar tu estructura) */
-  .table-scroll { max-height: 60vh; overflow-y: auto; }
-
-  /* Toolbar inferior de tabla (paginación + export) */
-  .table-toolbar {
-    display: flex; gap: .75rem; align-items: center; justify-content: space-between;
-    padding: .75rem 1rem; border-top: 1px solid #e5e7eb; background: #fff;
-  }
-  .pager { display: inline-flex; gap: .5rem; align-items: center; }
-  .pager-btn {
-    border: 1px solid #e5e7eb; background:#fff; padding: .375rem .625rem; border-radius: .5rem;
-  }
-  .pager-btn:disabled { opacity: .5; cursor: not-allowed; }
-  .export-btn {
-    border: 1px solid #111; color:#111; background:#fff; padding:.375rem .625rem; border-radius:.5rem;
-  }
-  .export-btn:hover { background:#111; color:#fff; }
-  .page-size { border:1px solid #e5e7eb; border-radius:.5rem; padding:.375rem .5rem; }
-</style>
+    /* Toolbars (paginación/export) – las monta el JS, solo estilo */
+    .table-toolbar { display: flex; gap: .75rem; align-items: center; justify-content: space-between; padding: .75rem 1rem; border-top: 1px solid #e5e7eb; background: #fff; }
+    .pager { display: inline-flex; gap: .5rem; align-items: center; }
+    .pager-btn { border: 1px solid #e5e7eb; background:#fff; padding: .375rem .625rem; border-radius: .5rem; }
+    .pager-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .export-btn { border: 1px solid #111; color:#111; background:#fff; padding:.375rem .625rem; border-radius:.5rem; }
+    .export-btn:hover { background:#111; color:#fff; }
+    .page-size { border:1px solid #e5e7eb; border-radius:.5rem; padding:.375rem .5rem; }
+  </style>
 </head>
 <body class="bg-white text-gray-900 antialiased">
+
   <!-- Header -->
   <header class="sticky top-0 z-40 border-b border-gray-200 bg-black text-white">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <h1 class="text-lg sm:text-xl font-semibold tracking-tight">InversionesMP</h1>
-      <button id="logout-btn" class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-black shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black">
-        <span>Salir</span>
-      </button>
+      <h1 class="text-lg sm:text-xl font-semibold tracking-tight">
+        InversionesMP • <span>Panel Admin</span>
+      </h1>
+
+      <!-- Menú de usuario (NUEVO) -->
+      <div class="flex items-center gap-3">
+        <!-- Nombre del usuario (opcional, se rellena desde JS si existe) -->
+        <span id="usuario-nombre-header" class="hidden sm:inline text-sm opacity-90"></span>
+
+        <div class="relative">
+          <button id="user-menu-toggle"
+                  class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-black shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white/60"
+                  aria-haspopup="menu" aria-expanded="false">
+            <span>Cuenta</span>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+
+          <div id="user-menu"
+               class="absolute right-0 mt-2 w-48 rounded-xl border border-gray-200 bg-white text-gray-900 shadow-lg hidden"
+               role="menu" aria-labelledby="user-menu-toggle">
+            <button id="change-password-btn" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">
+              Cambiar contraseña
+            </button>
+            <button id="logout-btn" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">
+              Salir
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
-  <!-- Contenido principal -->
+  <!-- Contenido -->
   <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-8">
     <!-- Mensaje de bienvenida -->
-    <div id="mensaje-bienvenida" class="text-left py-2 text-xl font-medium text-gray-800"></div>
+    <div id="mensaje-bienvenida" class="text-left text-xl font-medium text-gray-800"></div>
+
 
     <!-- Resumen -->
     <section aria-labelledby="resumen-title">
@@ -104,7 +117,7 @@
         </div>
         <div class="stat-card">
           <h3 class="stat-title">Cobradores activos</h3>
-          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <div class="stat-number"><span id="usuarios-count">0</span></div>
         </div>
         <div class="stat-card">
@@ -115,63 +128,38 @@
       </div>
     </section>
 
-    
-    <!-- Zona acciones rápidas -->
-    <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <!-- Deudores -->
-      <div class="lg:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="px-5 pt-5 pb-4 border-b border-gray-100 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 class="text-lg font-semibold text-black">Deudores</h2>
-            <p class="text-sm text-gray-500">Busca por nombre.</p>
-          </div>
-          <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <label class="sr-only" for="buscar-deudor">Buscar deudor</label>
-            <input id="buscar-deudor" type="text" inputmode="search" placeholder="Nombre" class="md-input w-full sm:w-72" />
-            <button id="btn-toggle-modal-deudor" class="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-900 active:scale-[0.98]">Agregar Deudor</button>
-            <button id="btn-toggle-modal-prestamo" class="rounded-xl border border-black px-4 py-2 text-sm font-medium text-black hover:bg-black hover:text-white transition">Hacer Préstamo</button>
-          </div>
+    <!-- Deudores -->
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div class="px-5 pt-5 pb-4 border-b border-gray-100 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-black">Deudores</h2>
+          <p class="text-sm text-gray-500">Busca por nombre o identificación.</p>
         </div>
-        <div class="table-scroll overflow-x-auto">
-          <table class="data-table min-w-[860px] w-full">
-            <thead class="bg-gray-50 text-gray-700">
-              <tr class="border-b border-gray-200">
-                <th class="p-3 text-left">Nombre Completo</th>
-                <th class="p-3 text-left">Identificación</th>
-                <th class="p-3 text-left">Teléfono</th>
-                <th class="p-3 text-left">Dirección</th>
-                <th class="p-3 text-left">Tipo</th>
-              <th class=\"p-3 text-left w-28\">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-deudores-container" class="divide-y divide-gray-100">
-              <!-- JS inserta filas -->
-            </tbody>
-          </table>
+        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <label class="sr-only" for="buscar-deudor">Buscar deudor</label>
+          <input id="buscar-deudor" type="text" inputmode="search" placeholder="Nombre o identificación" class="md-input w-full sm:w-72" />
+          <button id="btn-toggle-modal-deudor" class="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-900 active:scale-[0.98]">
+            Agregar Deudor
+          </button>
+          <button id="btn-toggle-modal-prestamo" class="rounded-xl border border-black px-4 py-2 text-sm font-medium text-black hover:bg-black hover:text-white transition">
+            Hacer Préstamo
+          </button>
         </div>
       </div>
-
-      <!-- Cobradores -->
-      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-black">Cobradores</h2>
-          <button id="btn-toggle-modal" class="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-900 active:scale-[0.98]">Agregar</button>
-        </div>
-        <div class="table-scroll overflow-x-auto">
-          <table class="data-table min-w-[560px] w-full">
-            <thead class="bg-gray-50 text-gray-700">
-              <tr class="border-b border-gray-200">
-                <th class="p-3 text-left">Nombre Completo</th>
-                <th class="p-3 text-left">Identificación</th>
-                <th class="p-3 text-left">Teléfono</th>
-                <th class="p-3 text-left\">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-cobradores-container" class="divide-y divide-gray-100">
-              <!-- JS inserta filas -->
-            </tbody>
-          </table>
-        </div>
+      <div class="table-scroll overflow-x-auto">
+        <table class="data-table min-w-[860px] w-full">
+          <thead class="bg-gray-50 text-gray-700">
+            <tr class="border-b border-gray-200">
+              <th class="p-3 text-left">Nombre Completo</th>
+              <th class="p-3 text-left">Identificación</th>
+              <th class="p-3 text-left">Teléfono</th>
+              <th class="p-3 text-left">Dirección</th>
+              <th class="p-3 text-left">Tipo</th>
+              <th class="p-3 text-left w-28">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-deudores-container" class="divide-y divide-gray-100"></tbody>
+        </table>
       </div>
     </section>
 
@@ -181,7 +169,7 @@
         <h2 class="text-lg font-semibold text-black">Préstamos</h2>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label for="buscar-prestamo" class="block text-xs font-medium text-gray-700 mb-1">Buscar por nombre</label>
+            <label for="buscar-prestamo" class="block text-xs font-medium text-gray-700 mb-1">Buscar por deudor</label>
             <input id="buscar-prestamo" type="text" placeholder="Nombre del deudor" class="md-input w-full" />
           </div>
           <div>
@@ -197,6 +185,7 @@
             <label for="filtro-cobrador" class="block text-xs font-medium text-gray-700 mb-1">Cobrador</label>
             <select id="filtro-cobrador" class="md-select w-full">
               <option value="">Todos</option>
+              <!-- opciones se cargan por JS -->
             </select>
           </div>
         </div>
@@ -214,9 +203,35 @@
               <th class="p-3 text-left">Cobrador</th>
             </tr>
           </thead>
-          <tbody id="tabla-prestamos-container" class="divide-y divide-gray-100">
-            <!-- JS inserta filas -->
-          </tbody>
+          <tbody id="tabla-prestamos-container" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Cobradores -->
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div class="px-5 pt-5 pb-4 border-b border-gray-100 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-black">Cobradores</h2>
+          <p class="text-sm text-gray-500">Administra el equipo de cobradores.</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <button id="btn-toggle-modal" class="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-900 active:scale-[0.98]">
+            Agregar Cobrador
+          </button>
+        </div>
+      </div>
+      <div class="table-scroll overflow-x-auto">
+        <table class="data-table min-w-[760px] w-full">
+          <thead class="bg-gray-50 text-gray-700">
+            <tr class="border-b border-gray-200">
+              <th class="p-3 text-left">Nombre</th>
+              <th class="p-3 text-left">Identificación</th>
+              <th class="p-3 text-left">Teléfono</th>
+              <th class="p-3 text-left w-28">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-cobradores-container" class="divide-y divide-gray-100"></tbody>
         </table>
       </div>
     </section>
@@ -240,17 +255,19 @@
               <option value="8">Agosto</option>
               <option value="9">Septiembre</option>
               <option value="10">Octubre</option>
-              <option value="11">Noviembre</n>
+              <option value="11">Noviembre</option>
               <option value="12">Diciembre</option>
             </select>
           </div>
         </div>
         <div class="flex gap-3">
-          <button id="btn-toggle-modal-pago" class="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-900 active:scale-[0.98]">Registrar Pago</button>
+          <button id="btn-toggle-modal-pago" class="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-900 active:scale-[0.98]">
+            Registrar Pago
+          </button>
         </div>
       </div>
       <div class="table-scroll overflow-x-auto">
-        <table class="data-table min-w-[720px] w-full">
+        <table class="data-table min-w-[780px] w-full">
           <thead class="bg-gray-50 text-gray-700">
             <tr class="border-b border-gray-200">
               <th class="p-3 text-left">Deudor</th>
@@ -259,9 +276,7 @@
               <th class="p-3 text-left">Fecha</th>
             </tr>
           </thead>
-          <tbody id="tabla-pagos-container" class="divide-y divide-gray-100">
-            <!-- JS inserta filas -->
-          </tbody>
+          <tbody id="tabla-pagos-container" class="divide-y divide-gray-100"></tbody>
         </table>
       </div>
     </section>
@@ -269,22 +284,37 @@
 
   <!-- Footer -->
   <footer class="mt-8 border-t border-gray-200 bg-black text-white">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 text-center text-sm">© 2025 InversionesMP. Todos los derechos reservados HozballSolution.</div>
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 text-center text-sm">
+      © 2025 InversionesMP. Todos los derechos reservados HozballSolution.
+    </div>
   </footer>
 
   <!-- Toasts -->
   <div id="toast-exito" class="fixed bottom-6 right-6 hidden rounded-xl bg-emerald-600 px-4 py-3 text-white shadow-lg">✅ Acción exitosa</div>
   <div id="toast-error" class="fixed bottom-6 right-6 hidden rounded-xl bg-red-600 px-4 py-3 text-white shadow-lg">❌ Ha ocurrido un error.</div>
+
   <!-- Modales -->
-  <!-- Modal Confirmación Eliminar -->
-  <div id="modal-confirm" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm">
-    <div class="mx-auto mt-28 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
-      <h3 class="text-lg font-semibold">Confirmar eliminación</h3>
-      <p id="confirm-message" class="mt-2 text-sm text-gray-600">¿Estás seguro de eliminar este elemento?</p>
-      <div class="mt-6 flex justify-end gap-2">
-        <button id="btn-cancelar-eliminar" type="button" class="rounded-xl border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">Cancelar</button>
-        <button id="btn-confirmar-eliminar" type="button" class="rounded-xl bg-black px-4 py-2 text-white">Eliminar</button>
+
+  <!-- Modal Cobrador -->
+  <div id="modal-cobrador" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm">
+    <div class="mx-auto mt-20 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Nuevo Cobrador</h3>
+        <button id="btn-close-modal" class="rounded-lg p-1 text-gray-500 hover:bg-gray-100" aria-label="Cerrar">✕</button>
       </div>
+      <form id="form-cobrador" class="space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <input id="nuevo-nombre" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Nombre" required />
+          <input id="nuevo-apellido" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Apellido" required />
+          <input id="nuevo-identificacion" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Identificación" required />
+          <input id="nuevo-telefono" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Teléfono" />
+        </div>
+        <p class="text-xs text-gray-500">La contraseña inicial se asignará automáticamente.</p>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="submit" class="rounded-xl bg-black px-4 py-2 text-white">Guardar</button>
+          <button id="btn-close-modal" type="button" class="rounded-xl border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">Cancelar</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -301,7 +331,7 @@
           <input id="deudor-apellido" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Apellido" required />
           <input id="deudor-identificacion" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Identificación" required />
           <input id="deudor-telefono" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Teléfono" />
-          <input id="deudor-direccion" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Dirección" />
+          <input id="deudor-direccion" class="rounded-xl border border-gray-300 px-3 py-2 md:col-span-2" type="text" placeholder="Dirección" />
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <select id="deudor-tipo" class="rounded-xl border border-gray-300 px-3 py-2" required>
@@ -311,28 +341,13 @@
           </select>
           <select id="deudor-cobrador" class="rounded-xl border border-gray-300 px-3 py-2" required>
             <option value="">Seleccionar Cobrador</option>
+            <!-- opciones via JS -->
           </select>
         </div>
-        <button class="w-full rounded-xl bg-black px-4 py-2 text-white" type="submit">Guardar</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal Cobrador -->
-  <div id="modal-cobrador" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm">
-    <div class="mx-auto mt-20 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold">Nuevo Cobrador</h3>
-        <button id="btn-close-modal" class="rounded-lg p-1 text-gray-500 hover:bg-gray-100" aria-label="Cerrar">✕</button>
-      </div>
-      <form id="form-cobrador" class="space-y-3">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <input id="nuevo-nombre" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Nombre" required />
-          <input id="nuevo-apellido" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Apellido" required />
-          <input id="nuevo-identificacion" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Identificación" required />
-          <input id="nuevo-telefono" class="rounded-xl border border-gray-300 px-3 py-2" type="text" placeholder="Teléfono" />
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="submit" class="rounded-xl bg-black px-4 py-2 text-white">Guardar</button>
+          <button id="btn-close-modal-deudor" type="button" class="rounded-xl border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">Cancelar</button>
         </div>
-        <button class="w-full rounded-xl bg-black px-4 py-2 text-white" type="submit">Guardar</button>
       </form>
     </div>
   </div>
@@ -384,9 +399,31 @@
     </div>
   </div>
 
-  <!-- Script: mantener la misma ruta para compatibilidad con tu JS actual -->
+  <!-- Modal Cambiar Contraseña (NUEVO) -->
+  <div id="modal-password" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm">
+    <div class="mx-auto mt-24 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Cambiar contraseña</h3>
+        <button id="btn-close-modal-password" class="rounded-lg p-1 text-gray-500 hover:bg-gray-100" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="form-password" class="space-y-3" novalidate>
+        <input id="pwd-actual" type="password" class="w-full rounded-xl border border-gray-300 px-3 py-2"
+               placeholder="Contraseña actual" autocomplete="current-password" />
+        <input id="pwd-nueva" type="password" class="w-full rounded-xl border border-gray-300 px-3 py-2"
+               placeholder="Nueva contraseña (mín. 8 caracteres)" autocomplete="new-password" required minlength="8" />
+        <input id="pwd-confirmar" type="password" class="w-full rounded-xl border border-gray-300 px-3 py-2"
+               placeholder="Confirmar nueva contraseña" autocomplete="new-password" required minlength="8" />
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="btn-cancelar-password" class="rounded-xl border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">Cancelar</button>
+          <button type="submit" class="rounded-xl bg-black px-4 py-2 text-white hover:bg-gray-900">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Script principal -->
   <script type="module" src="./js/admin.js"></script>
-  <script>
+    <script>
     // Mostrar mensaje de bienvenida con el nombre del usuario
     document.addEventListener('DOMContentLoaded', function() {
       const nombreUsuario = localStorage.getItem('nombre');

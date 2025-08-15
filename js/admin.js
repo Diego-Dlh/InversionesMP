@@ -9,6 +9,7 @@ import { fetchWithAuth } from './api.js';
  * Config / Selectores
  * ==========================================================================*/
 const API_BASE = 'https://inversiones-api.onrender.com/api';
+
 const SELECTORS = {
   // acciones generales
   logoutBtn: 'logout-btn',
@@ -58,7 +59,7 @@ const SELECTORS = {
   toastError: 'toast-error',
   toastExito: 'toast-exito',
 
-  // préstamo (selects/inputs)
+  // préstamo (inputs)
   selectPrestamoDeudor: 'prestamo-deudor',
   inputPrestamoMonto: 'prestamo-monto',
   inputPrestamoInteres: 'prestamo-interes',
@@ -86,6 +87,21 @@ const SELECTORS = {
   nuevoTelefono: 'nuevo-telefono'
 };
 
+// --- MENÚ USUARIO / PASSWORD (nuevos selectores, sin alterar los existentes) ---
+const SELECTORS_EXTRAS = {
+  userMenuToggle: 'user-menu-toggle',
+  userMenu: 'user-menu',
+  changePasswordBtn: 'change-password-btn',
+  modalPassword: 'modal-password',
+  btnCloseModalPassword: 'btn-close-modal-password',
+  btnCancelarPassword: 'btn-cancelar-password',
+  formPassword: 'form-password',
+  pwdActual: 'pwd-actual',
+  pwdNueva: 'pwd-nueva',
+  pwdConfirmar: 'pwd-confirmar',
+  usuarioNombreHeader: 'usuario-nombre-header'
+};
+
 /* ============================================================================
  * Estado global
  * ==========================================================================*/
@@ -95,7 +111,7 @@ let usuariosMap = new Map();
 let deudoresGlobal = [];
 let prestamosGlobal = [];
 let usuariosGlobal = [];
-let pendingDelete = null; // { tipo: 'deudor' | 'cobrador', id: string|number }
+let pendingDelete = null; // { tipo: 'deudor' | 'cobrador', id }
 
 /* ----- Estado de paginación/vista por tabla ----- */
 const paging = {
@@ -105,7 +121,6 @@ const paging = {
   pagos: { page: 1, pageSize: 10, view: [] }
 };
 
-/* Helpers paginación */
 const setView = (key, arr) => { paging[key].view = Array.isArray(arr) ? arr : []; paging[key].page = 1; };
 const pageCount = (key) => Math.max(1, Math.ceil((paging[key].view.length || 0) / paging[key].pageSize));
 const slicePage = (key) => {
@@ -118,8 +133,16 @@ const slicePage = (key) => {
  * Bootstrap
  * ==========================================================================*/
 document.addEventListener('DOMContentLoaded', async () => {
-  ensureConfirmUI(); // modal confirmar (eliminar)
-  ensureTableToolbars(); // paginación + export
+  ensureConfirmUI();      // modal confirmar (eliminar)
+  ensureTableToolbars();  // paginación + export
+
+  // Header: muestra nombre (si lo guardaste en login)
+  const headerName = document.getElementById(SELECTORS_EXTRAS.usuarioNombreHeader);
+  const lsNombre = localStorage.getItem('nombre');
+  if (headerName && lsNombre) {
+    headerName.textContent = lsNombre;
+    headerName.classList.remove('hidden');
+  }
 
   const rol = localStorage.getItem('rol');
   if (rol !== '1') {
@@ -136,20 +159,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       fetchWithAuth(`${API_BASE}/pagos`)
     ]);
 
-    // estado
     deudoresGlobal = deudores;
     prestamosGlobal = prestamos;
     usuariosGlobal = usuarios;
 
-    // maps
     deudores.forEach(d => deudoresMap.set(String(d.id), `${d.nombre} ${d.apellido ?? ''}`.trim()));
     usuarios.forEach(u => usuariosMap.set(String(u.id), `${u.nombre} ${u.apellido ?? ''}`.trim()));
 
-    // cards (resumen)
+    // cards (solo cobradores activos: rol=2)
     setText(SELECTORS.deudoresCount, deudores.length);
     setText(SELECTORS.prestamosCount, prestamos.length);
     setText(SELECTORS.pagosCount, pagos.length);
-    setText(SELECTORS.usuariosCount, usuarios.length);
+    setText(SELECTORS.usuariosCount, usuarios.filter(u => Number(u.rol) === 2).length);
 
     // render inicial
     renderTablaDeudores(deudoresGlobal);
@@ -158,15 +179,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarOpcionesCobradores(usuariosGlobal);
     poblarFiltroCobrador(usuariosGlobal);
 
-    await cargarPagosFiltrados(); // calcula total recaudado (mes)
+    await cargarPagosFiltrados(); // total recaudado del mes
   } catch (err) {
     console.error(err);
     mostrarToast('error', 'Error cargando datos');
   }
 
-  /* -------------------------
-   * Eventos globales
-   * -----------------------*/
+  // eventos globales
   byId(SELECTORS.logoutBtn)?.addEventListener('click', () => {
     localStorage.removeItem('token'); localStorage.removeItem('rol');
     window.location.href = 'index.html';
@@ -194,9 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   byId(SELECTORS.tablaDeudores)?.addEventListener('click', onActionClick);
   byId(SELECTORS.tablaCobradores)?.addEventListener('click', onActionClick);
 
-  /* -------------------------
-   * Modales: abrir/cerrar
-   * -----------------------*/
+  // Modales: abrir/cerrar
   const modalCobrador = byId(SELECTORS.modalCobrador);
   byId(SELECTORS.btnToggleModalCobrador)?.addEventListener('click', () => modalCobrador?.classList.remove('hidden'));
   byId(SELECTORS.btnCloseModalCobrador)?.addEventListener('click', () => { modalCobrador?.classList.add('hidden'); byId(SELECTORS.formCobrador)?.reset(); });
@@ -221,9 +238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     pendingDelete = null; hideConfirmModal(); handleDelete(tipo, id);
   });
 
-  /* -------------------------
-   * Validaciones en tiempo real (solo dígitos)
-   * -----------------------*/
+  // Validaciones en tiempo real (solo dígitos)
   attachNumericSanitizers([
     SELECTORS.inputPrestamoMonto,
     SELECTORS.inputPrestamoInteres,
@@ -234,13 +249,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     SELECTORS.deudorTelefono,
     SELECTORS.nuevoTelefono
   ]);
+
+  /* =======================
+   * Menú de usuario + Password (NUEVO)
+   * =======================*/
+  initUserMenuAndPassword();
 });
 
 /* ============================================================================
  * Renderizadores + paginación
  * ==========================================================================*/
+// Deudores (orden por nombre)
 function renderTablaDeudores(deudores) {
-  setView('deudores', deudores);
+  const ordenados = sortByNombre(deudores, d => `${d.nombre ?? ''} ${d.apellido ?? ''}`.trim());
+  setView('deudores', ordenados);
   renderTablaDeudoresPage();
   updateToolbar('deudores');
 }
@@ -266,8 +288,10 @@ function renderTablaDeudoresPage() {
   });
 }
 
+// Préstamos (orden por fecha desc)
 function renderTablaPrestamos(prestamos) {
-  setView('prestamos', prestamos);
+  const ordenados = sortByFechaDesc(prestamos, p => p.fecha);
+  setView('prestamos', ordenados);
   renderTablaPrestamosPage();
   updateToolbar('prestamos');
 }
@@ -294,8 +318,10 @@ function renderTablaPrestamosPage() {
   });
 }
 
+// Pagos (orden por fecha desc)
 function renderTablaPagos(pagos) {
-  setView('pagos', pagos);
+  const ordenados = sortByFechaDesc(pagos, p => p.fecha);
+  setView('pagos', ordenados);
   renderTablaPagosPage();
   updateToolbar('pagos');
 }
@@ -315,8 +341,11 @@ function renderTablaPagosPage() {
   });
 }
 
+// Cobradores (oculta admin: rol 1)
 function renderTablaCobradores(cobradores) {
-  setView('cobradores', cobradores);
+  const soloCobradores = (cobradores || []).filter(u => Number(u.rol) === 2);
+  const ordenados = sortByNombre(soloCobradores, c => `${c.nombre ?? ''} ${c.apellido ?? ''}`.trim());
+  setView('cobradores', ordenados);
   renderTablaCobradoresPage();
   updateToolbar('cobradores');
 }
@@ -380,7 +409,7 @@ function formatearFecha(fechaISO) {
 
 function getNombreDeudorDesdePago(pago) {
   const prestamo = prestamosGlobal.find(pr => pr.id === pago.prestamo);
-  if (!prestamo) return 'Prestamo no encontrado';
+  if (!prestamo) return 'Préstamo no encontrado';
   const deudor = deudoresGlobal.find(d => d.id === prestamo.deudor);
   return deudor ? `${deudor.nombre} ${deudor.apellido}` : 'Deudor no encontrado';
 }
@@ -422,10 +451,9 @@ byId(SELECTORS.formCobrador)?.addEventListener('submit', async (e) => {
   });
 
   if (res.ok) {
-    // refrescar listado y card
     usuariosGlobal = await fetchWithAuth(`${API_BASE}/usuarios/`);
     usuariosMap = new Map(usuariosGlobal.map(u => [String(u.id), `${u.nombre} ${u.apellido ?? ''}`.trim()]));
-    setText(SELECTORS.usuariosCount, usuariosGlobal.length);
+    setText(SELECTORS.usuariosCount, usuariosGlobal.filter(u => Number(u.rol) === 2).length);
     renderTablaCobradores(usuariosGlobal);
     poblarFiltroCobrador(usuariosGlobal);
     cargarOpcionesCobradores(usuariosGlobal);
@@ -475,7 +503,7 @@ byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
     const nuevosDeudores = await fetchWithAuth(`${API_BASE}/deudores/`);
     deudoresGlobal = nuevosDeudores;
     deudoresMap = new Map(nuevosDeudores.map(d => [String(d.id), `${d.nombre} ${d.apellido}`]));
-    setText(SELECTORS.deudoresCount, nuevosDeudores.length); // actualizar card
+    setText(SELECTORS.deudoresCount, nuevosDeudores.length);
     renderTablaDeudores(nuevosDeudores);
 
     mostrarToast('exito', 'Deudor creado con éxito');
@@ -484,34 +512,7 @@ byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
   }
 });
 
-// Préstamo: abrir select deudores
-function cargarSelectDeudores() {
-  const select = byId(SELECTORS.selectPrestamoDeudor);
-  if (!select) return;
-  select.innerHTML = '<option value="">Seleccionar Deudor</option>';
-  deudoresGlobal.forEach(d => {
-    const option = document.createElement('option');
-    option.value = d.id;
-    option.textContent = `${d.nombre} ${d.apellido}`;
-    select.appendChild(option);
-  });
-}
-
-// Pago: abrir select préstamos (muestra saldo pendiente)
-function cargarSelectPrestamos() {
-  const select = byId(SELECTORS.selectPagoPrestamo);
-  if (!select) return;
-  select.innerHTML = '<option value="">Seleccionar Préstamo</option>';
-  prestamosGlobal.forEach(p => {
-    const nombre = deudoresMap.get(String(p.deudor)) || `ID: ${p.deudor}`;
-    const option = document.createElement('option');
-    option.value = p.id;
-    option.textContent = `${nombre} - $${Number(p.saldo_pendiente).toLocaleString('es-CO')}`;
-    select.appendChild(option);
-  });
-}
-
-// Préstamo: submit
+// Préstamo: submit (backend asigna cobrador=request.user; NO enviamos 'cobrador')
 byId(SELECTORS.formPrestamo)?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!validateForm([
@@ -528,7 +529,7 @@ byId(SELECTORS.formPrestamo)?.addEventListener('submit', async (e) => {
     monto: parseInt(byId(SELECTORS.inputPrestamoMonto).value, 10),
     interes: parseInt(byId(SELECTORS.inputPrestamoInteres).value, 10),
     meses: parseInt(byId(SELECTORS.inputPrestamoMeses).value, 10),
-    fecha: byId(SELECTORS.inputPrestamoFecha).value,
+    fecha: byId(SELECTORS.inputPrestamoFecha).value
   };
 
   const res = await fetch(`${API_BASE}/prestamos/`, {
@@ -544,11 +545,12 @@ byId(SELECTORS.formPrestamo)?.addEventListener('submit', async (e) => {
 
     const nuevos = await fetchWithAuth(`${API_BASE}/prestamos/`);
     prestamosGlobal = nuevos;
-    setText(SELECTORS.prestamosCount, nuevos.length);   // actualizar card
+    setText(SELECTORS.prestamosCount, nuevos.length);
     renderTablaPrestamos(nuevos);
-    cargarSelectPrestamos(); // por si registras pago inmediatamente
+    cargarSelectPrestamos();
   } else {
-    mostrarToast('error', 'Error al registrar préstamo');
+    const msg = await explainBadRequest(res);
+    mostrarToast('error', msg || 'Error al registrar préstamo');
   }
 });
 
@@ -561,7 +563,7 @@ byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
     { id: SELECTORS.inputPagoFecha, type: 'date' }
   ])) return;
 
-  // Validación de negocio: monto <= saldo_pendiente
+  // Regla: monto <= saldo_pendiente
   const prestamoId = parseInt(byId(SELECTORS.selectPagoPrestamo).value, 10);
   const prestamo = prestamosGlobal.find(p => p.id === prestamoId);
   const monto = parseInt(byId(SELECTORS.inputPagoMonto).value, 10);
@@ -576,11 +578,7 @@ byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
   }
 
   const token = localStorage.getItem('token');
-  const data = {
-    prestamo: prestamoId,
-    monto_pagado: monto,
-    fecha: byId(SELECTORS.inputPagoFecha).value
-  };
+  const data = { prestamo: prestamoId, monto_pagado: monto, fecha: byId(SELECTORS.inputPagoFecha).value };
 
   const res = await fetch(`${API_BASE}/pagos/`, {
     method: 'POST',
@@ -589,16 +587,15 @@ byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
   });
 
   if (res.ok) {
-    // cerrar modal + limpiar
     byId(SELECTORS.modalPago)?.classList.add('hidden');
     byId(SELECTORS.formPago)?.reset();
 
-    // 1) Recalcular pagos (card y total recaudado del mes)
+    // 1) card pagos y total del mes
     const pagosAll = await fetchWithAuth(`${API_BASE}/pagos`);
-    setText(SELECTORS.pagosCount, pagosAll.length); // card de pagos (total)
+    setText(SELECTORS.pagosCount, pagosAll.length);
     await cargarPagosFiltrados(byId(SELECTORS.filtroMes)?.value || '');
 
-    // 2) Refrescar préstamos (saldo/estado) y su tabla
+    // 2) refrescar préstamos (saldo/estado)
     const nuevosPrestamos = await fetchWithAuth(`${API_BASE}/prestamos/`);
     prestamosGlobal = nuevosPrestamos;
     renderTablaPrestamos(nuevosPrestamos);
@@ -606,7 +603,8 @@ byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
 
     mostrarToast('exito', 'Pago registrado con éxito');
   } else {
-    mostrarToast('error', 'Error al registrar el pago');
+    const msg = await explainBadRequest(res);
+    mostrarToast('error', msg || 'Error al registrar el pago');
   }
 });
 
@@ -646,7 +644,7 @@ async function handleDelete(tipo, id) {
       } else {
         usuariosGlobal = usuariosGlobal.filter(u => String(u.id) !== String(id));
         usuariosMap.delete(String(id));
-        setText(SELECTORS.usuariosCount, usuariosGlobal.length);
+        setText(SELECTORS.usuariosCount, usuariosGlobal.filter(u => Number(u.rol) === 2).length);
         renderTablaCobradores(usuariosGlobal);
         poblarFiltroCobrador(usuariosGlobal);
         cargarOpcionesCobradores(usuariosGlobal);
@@ -664,7 +662,7 @@ async function handleDelete(tipo, id) {
 }
 
 /* ============================================================================
- * Toolbar por tabla: paginación + export (sin cambios funcionales)
+ * Toolbar por tabla: paginación + export
  * ==========================================================================*/
 function ensureTableToolbars() {
   mountToolbar(SELECTORS.tablaDeudores,   'deudores',   'deudores');
@@ -823,7 +821,7 @@ function cargarOpcionesCobradores(usuarios) {
   const select = byId(SELECTORS.selectDeudorCobrador);
   if (!select) return;
   select.innerHTML = '<option value="">Seleccionar Cobrador</option>';
-  usuarios.filter(u => u.rol === 2).forEach(c => {
+  usuarios.filter(u => Number(u.rol) === 2).forEach(c => {
     const option = document.createElement('option');
     option.value = c.id;
     option.textContent = `${c.nombre} ${c.apellido}`;
@@ -835,7 +833,7 @@ function poblarFiltroCobrador(usuarios) {
   const select = byId(SELECTORS.filtroCobrador);
   if (!select) return;
   select.innerHTML = '<option value="">Todos</option>';
-  usuarios.forEach(u => {
+  usuarios.filter(u => Number(u.rol) === 2).forEach(u => {
     const opt = document.createElement('option');
     opt.value = u.id;
     opt.textContent = `${u.nombre} ${u.apellido}`;
@@ -851,7 +849,9 @@ function mostrarToast(tipo = 'exito', mensaje = '') {
   setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
-// helpers
+/* ============================================================================
+ * Helpers básicos
+ * ==========================================================================*/
 function byId(id) { return document.getElementById(id); }
 function setText(id, value) { const el = byId(id); if (el) el.textContent = String(value); }
 function escapeHTML(v) {
@@ -905,13 +905,66 @@ function attachNumericSanitizers(ids = []) {
       const cur = el.value;
       const clean = cur.replace(/[^\d]/g, '');
       if (cur !== clean) el.value = clean;
-      if (el.validity.customError) {
-        el.setCustomValidity('');
-      }
+      if (el.validity.customError) el.setCustomValidity('');
     });
   });
 }
 
+/* ============================================================================
+ * Orden helpers
+ * ==========================================================================*/
+const norm = (s) => (s ?? '').toString().toLocaleLowerCase('es');
+const cmpText = (a, b) => norm(a).localeCompare(norm(b), 'es', { sensitivity: 'base' });
+const toTime = (v) => new Date(v).getTime() || 0;
+
+const sortByNombre = (arr, getNombre) =>
+  [...arr].sort((a, b) => cmpText(getNombre(a), getNombre(b)));
+
+const sortByFechaDesc = (arr, getFecha) =>
+  [...arr].sort((a, b) => toTime(getFecha(b)) - toTime(getFecha(a)));
+
+/* ============================================================================
+ * Helpers de error + JWT
+ * ==========================================================================*/
+async function explainBadRequest(res) {
+  try {
+    const txt = await res.clone().text();
+    try {
+      const j = JSON.parse(txt);
+      if (j.detail) return j.detail;
+      const keys = Object.keys(j || {});
+      if (keys.length) {
+        const k = keys[0];
+        const val = Array.isArray(j[k]) ? j[k].join(', ') : String(j[k]);
+        return `${k}: ${val}`;
+      }
+    } catch {}
+    return txt || 'Solicitud inválida';
+  } catch { return 'Solicitud inválida'; }
+}
+
+function parseJwt(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    return JSON.parse(json);
+  } catch { return {}; }
+}
+
+function toPositiveInt(x) {
+  const n = parseInt(x, 10);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+function getUserId() {
+  const idFromLS = toPositiveInt(localStorage.getItem('usuario_id'));
+  if (idFromLS) return idFromLS;
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  const p = parseJwt(token);
+  return toPositiveInt(p?.id ?? p?.user_id ?? p?.uid ?? p?.sub);
+}
 
 /* ============================================================================
  * Confirm UI (inyectado dinámicamente)
@@ -931,4 +984,135 @@ function ensureConfirmUI() {
       </div>
     </div>`;
   document.body.appendChild(wrap);
+}
+
+/* ============================================================================
+ * Selects auxiliares
+ * ==========================================================================*/
+function cargarSelectDeudores() {
+  const select = byId(SELECTORS.selectPrestamoDeudor);
+  if (!select) return;
+  select.innerHTML = '<option value="">Seleccionar Deudor</option>';
+  (deudoresGlobal || []).forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = `${d.nombre ?? ''} ${d.apellido ?? ''}`.trim();
+    select.appendChild(opt);
+  });
+}
+
+function cargarSelectPrestamos() {
+  const select = byId(SELECTORS.selectPagoPrestamo);
+  if (!select) return;
+  select.innerHTML = '<option value="">Seleccionar Préstamo</option>';
+  (prestamosGlobal || []).forEach(p => {
+    const nombre = deudoresMap.get(String(p.deudor)) || `ID: ${p.deudor}`;
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = `${nombre} - $${Number(p.saldo_pendiente).toLocaleString('es-CO')}`;
+    select.appendChild(opt);
+  });
+}
+
+/* ============================================================================
+ * Menú Usuario + Cambio de contraseña (NUEVO)
+ * ==========================================================================*/
+function initUserMenuAndPassword() {
+  const btnMenu = document.getElementById(SELECTORS_EXTRAS.userMenuToggle);
+  const menu = document.getElementById(SELECTORS_EXTRAS.userMenu);
+
+  btnMenu?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const expanded = btnMenu.getAttribute('aria-expanded') === 'true';
+    btnMenu.setAttribute('aria-expanded', String(!expanded));
+    menu?.classList.toggle('hidden');
+  });
+
+  // Cerrar menú al clicar fuera o con Escape
+  document.addEventListener('click', (e) => {
+    if (!menu || !btnMenu) return;
+    if (!menu.classList.contains('hidden') && !menu.contains(e.target) && e.target !== btnMenu) {
+      menu.classList.add('hidden'); btnMenu.setAttribute('aria-expanded', 'false');
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && menu && !menu.classList.contains('hidden')) {
+      menu.classList.add('hidden'); btnMenu?.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  // Modal cambiar contraseña
+  const openPwd = document.getElementById(SELECTORS_EXTRAS.changePasswordBtn);
+  const modalPwd = document.getElementById(SELECTORS_EXTRAS.modalPassword);
+  const closePwd = document.getElementById(SELECTORS_EXTRAS.btnCloseModalPassword);
+  const cancelPwd = document.getElementById(SELECTORS_EXTRAS.btnCancelarPassword);
+
+  openPwd?.addEventListener('click', () => { modalPwd?.classList.remove('hidden'); menu?.classList.add('hidden'); });
+  closePwd?.addEventListener('click', () => { modalPwd?.classList.add('hidden'); resetPasswordForm(); });
+  cancelPwd?.addEventListener('click', () => { modalPwd?.classList.add('hidden'); resetPasswordForm(); });
+
+  document.getElementById(SELECTORS_EXTRAS.formPassword)?.addEventListener('submit', onSubmitChangePassword);
+}
+
+async function onSubmitChangePassword(e) {
+  e.preventDefault();
+  const actual = document.getElementById(SELECTORS_EXTRAS.pwdActual);
+  const nueva = document.getElementById(SELECTORS_EXTRAS.pwdNueva);
+  const confirmar = document.getElementById(SELECTORS_EXTRAS.pwdConfirmar);
+  const modalPwd = document.getElementById(SELECTORS_EXTRAS.modalPassword);
+
+  // Validaciones básicas
+  if (!nueva.value || nueva.value.length < 8) {
+    nueva.setCustomValidity('La nueva contraseña debe tener al menos 8 caracteres.');
+    nueva.reportValidity();
+    return;
+  } else nueva.setCustomValidity('');
+
+  if (nueva.value !== confirmar.value) {
+    confirmar.setCustomValidity('La confirmación no coincide.');
+    confirmar.reportValidity();
+    return;
+  } else confirmar.setCustomValidity('');
+
+  if (actual.value && actual.value === nueva.value) {
+    nueva.setCustomValidity('La nueva contraseña no puede ser igual a la actual.');
+    nueva.reportValidity();
+    return;
+  } else nueva.setCustomValidity('');
+
+  const userId = getUserId();
+  if (!userId) {
+    mostrarToast('error', 'No se pudo identificar al usuario.');
+    return;
+  }
+
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API_BASE}/usuarios/${userId}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ 'contraseña': nueva.value })
+    });
+
+    if (res.ok) {
+      mostrarToast('exito', 'Contraseña actualizada.');
+      modalPwd?.classList.add('hidden');
+      resetPasswordForm();
+      // Opcional: forzar re-login por seguridad:
+      // localStorage.clear(); window.location.href = 'index.html';
+    } else {
+      let msg = 'No se pudo cambiar la contraseña.';
+      try { const j = await res.json(); if (j?.detail) msg = j.detail; } catch {}
+      mostrarToast('error', msg);
+    }
+  } catch (err) {
+    console.error(err);
+    mostrarToast('error', 'Error de red al cambiar contraseña.');
+  }
+}
+
+function resetPasswordForm() {
+  document.getElementById(SELECTORS_EXTRAS.formPassword)?.reset();
+  document.getElementById(SELECTORS_EXTRAS.pwdNueva)?.setCustomValidity('');
+  document.getElementById(SELECTORS_EXTRAS.pwdConfirmar)?.setCustomValidity('');
 }
