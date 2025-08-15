@@ -56,10 +56,9 @@
   <header class="sticky top-0 z-40 border-b border-gray-200 bg-black text-white">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <h1 class="text-lg sm:text-xl font-semibold tracking-tight">
-        InversionesMP • <span>Panel Cobrador</span>
+        InversionesMP
       </h1>
       <div class="flex items-center gap-3">
-        <span id="usuario-nombre" class="hidden sm:inline text-sm opacity-90"></span>
         <button id="logout-btn" class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-black shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black">
           <span>Salir</span>
         </button>
@@ -69,6 +68,8 @@
 
   <!-- Contenido -->
   <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+    <!-- Mensaje de bienvenida -->
+    <div id="mensaje-bienvenida" class="text-left py-2 text-xl font-medium text-gray-800"></div>
     <!-- Resumen -->
     <section aria-labelledby="resumen-title">
       <h2 id="resumen-title" class="sr-only">Resumen</h2>
@@ -96,45 +97,42 @@
       </div>
     </section>
 
-    <!-- Acciones rápidas -->
-    <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <!-- Deudores -->
-      <div class="lg:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="px-5 pt-5 pb-4 border-b border-gray-100 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 class="text-lg font-semibold text-black">Deudores</h2>
-            <p class="text-sm text-gray-500">Busca por nombre.</p>
-          </div>
-          <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <label class="sr-only" for="buscar-deudor">Buscar deudor</label>
-            <input id="buscar-deudor" type="text" inputmode="search" placeholder="Nombre" class="md-input w-full sm:w-72" />
-            <button id="btn-toggle-modal-deudor" class="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-900 active:scale-[0.98]">Agregar Deudor</button>
-            <button id="btn-toggle-modal-prestamo" class="rounded-xl border border-black px-4 py-2 text-sm font-medium text-black hover:bg-black hover:text-white transition">Hacer Préstamo</button>
-          </div>
-        </div>
-        <div class="table-scroll overflow-x-auto">
-          <table class="data-table min-w-[860px] w-full">
-            <thead class="bg-gray-50 text-gray-700">
-              <tr class="border-b border-gray-200">
-                <th class="p-3 text-left">Nombre Completo</th>
-                <th class="p-3 text-left">Identificación</th>
-                <th class="p-3 text-left">Teléfono</th>
-                <th class="p-3 text-left">Dirección</th>
-                <th class="p-3 text-left">Tipo</th>
-                <th class="p-3 text-left w-28">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-deudores-container" class="divide-y divide-gray-100"></tbody>
-          </table>
-        </div>
-      </div>
+    <!-- Deudores (full width, sin columna lateral) -->
+<section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+  <div class="px-5 pt-5 pb-4 border-b border-gray-100 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-black">Deudores</h2>
+      <p class="text-sm text-gray-500">Busca por nombre.</p>
+    </div>
+    <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+      <label class="sr-only" for="buscar-deudor">Buscar deudor</label>
+      <input id="buscar-deudor" type="text" inputmode="search" placeholder="Nombre" class="md-input w-full sm:w-72" />
+      <button id="btn-toggle-modal-deudor" class="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-gray-900 active:scale-[0.98]">
+        Agregar Deudor
+      </button>
+      <button id="btn-toggle-modal-prestamo" class="rounded-xl border border-black px-4 py-2 text-sm font-medium text-black hover:bg-black hover:text-white transition">
+        Hacer Préstamo
+      </button>
+    </div>
+  </div>
 
-      <!-- Tarjeta auxiliar (espaciado) -->
-      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 flex flex-col justify-center">
-        <h3 class="text-base font-semibold text-black">Accesos rápidos</h3>
-        <p class="text-sm text-gray-600 mt-1">Registra pagos, crea préstamos o nuevos deudores desde los botones superiores.</p>
-      </div>
-    </section>
+  <div class="table-scroll overflow-x-auto">
+    <table class="data-table min-w-[860px] w-full">
+      <thead class="bg-gray-50 text-gray-700">
+        <tr class="border-b border-gray-200">
+          <th class="p-3 text-left">Nombre Completo</th>
+          <th class="p-3 text-left">Identificación</th>
+          <th class="p-3 text-left">Teléfono</th>
+          <th class="p-3 text-left">Dirección</th>
+          <th class="p-3 text-left">Tipo</th>
+          <th class="p-3 text-left w-28">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-deudores-container" class="divide-y divide-gray-100"></tbody>
+    </table>
+  </div>
+</section>
+
 
     <!-- Préstamos -->
     <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -308,12 +306,13 @@
 
   <!-- Script cobrador -->
   <script type="module" src="./js/cobrador.js"></script>
-  <script>
-    // Mostrar nombre en header
+    <script>
+    // Mostrar mensaje de bienvenida con el nombre del usuario
     document.addEventListener('DOMContentLoaded', function() {
-      const nombre = localStorage.getItem('nombre');
-      const el = document.getElementById('usuario-nombre');
-      if (nombre && el) { el.textContent = nombre; el.classList.remove('hidden'); }
+      const nombreUsuario = localStorage.getItem('nombre');
+      if (nombreUsuario) {
+        document.getElementById('mensaje-bienvenida').textContent = `¡Bienvenido, ${nombreUsuario}!`;
+      }
     });
   </script>
 </body>
