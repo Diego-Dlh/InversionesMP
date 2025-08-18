@@ -486,7 +486,6 @@ byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
     telefono: byId(SELECTORS.deudorTelefono).value.trim(),
     direccion: byId(SELECTORS.deudorDireccion).value.trim(),
     tipo: byId(SELECTORS.deudorTipo).value,
-    cobrador_id: byId(SELECTORS.selectDeudorCobrador).value
   };
   const token = localStorage.getItem('token');
 
