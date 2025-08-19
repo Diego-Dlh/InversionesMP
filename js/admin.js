@@ -8,7 +8,7 @@ import { fetchWithAuth } from './api.js';
 /* ============================================================================
  * Config / Selectores
  * ==========================================================================*/
-const API_BASE = 'http://31.97.138.41:8000/api';
+const API_BASE = 'http://31.97.138.41/api';
 
 const SELECTORS = {
   // acciones generales
