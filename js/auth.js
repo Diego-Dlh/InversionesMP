@@ -8,7 +8,8 @@ form?.addEventListener("submit", async (e) => {
   const contraseña = document.getElementById("contraseña").value;
 
   try {
-    const res = await fetch("https://inversiones-api.onrender.com/api/login/", {
+    const res = await fetch("http://31.97.138.41:8000/api/login/", {
+
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identificacion, contraseña }),
