@@ -133,7 +133,6 @@ const slicePage = (key) => {
  * ==========================================================================*/
 document.addEventListener('DOMContentLoaded', async () => {
   ensureConfirmUI();      // modal confirmar (eliminar)
-  ensureTableToolbars();  // paginación + export
 
   const rol = localStorage.getItem('rol');
   if (rol !== '2') {
@@ -245,6 +244,10 @@ document.addEventListener('DOMContentLoaded', async () => {
    * Menú de usuario + Password (NUEVO)
    * =======================*/
   initUserMenuAndPassword();
+  // === Formato CO (solo estético) ===
+  setupColombiaMasks();
+  installPreSubmitNormalizers();
+
 });
 
 /* ============================================================================
@@ -467,7 +470,7 @@ byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
     { id: SELECTORS.deudorTelefono, type: 'numberPositive' },
     { id: SELECTORS.deudorDireccion, type: 'text' },
     { id: SELECTORS.deudorTipo, type: 'select' },
-    { id: SELECTORS.selectDeudorCobrador, type: 'select' }
+
   ])) return;
 
   const data = {
@@ -477,7 +480,6 @@ byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
     telefono: byId(SELECTORS.deudorTelefono).value.trim(),
     direccion: byId(SELECTORS.deudorDireccion).value.trim(),
     tipo: byId(SELECTORS.deudorTipo).value,
-    cobrador_id: byId(SELECTORS.selectDeudorCobrador).value
   };
   const token = localStorage.getItem('token');
 
@@ -670,7 +672,6 @@ function mountToolbar(tbodyId, key, fileBase) {
   bar.className = 'table-toolbar';
   bar.innerHTML = `
     <div class="left flex items-center gap-2">
-      <button id="exp-${key}-xls" class="export-btn">Exportar Excel</button>
     </div>
     <div class="right pager">
       <label class="text-sm text-gray-600">Filas:
@@ -684,7 +685,6 @@ function mountToolbar(tbodyId, key, fileBase) {
     </div>`;
   scroll.insertAdjacentElement('afterend', bar);
 
-  byId(`exp-${key}-xls`)?.addEventListener('click', () => exportTable(key, 'xls', fileBase));
 
   byId(`pgs-${key}`)?.addEventListener('change', (e) => {
     const n = parseInt(e.target.value, 10) || 10;
@@ -716,21 +716,6 @@ function rerenderPage(key) {
   updateToolbar(key);
 }
 
-/* ============================================================================
- * Export CSV / Excel
- * ==========================================================================*/
-function exportTable(key, fmt = 'csv', fileBase = 'export') {
-  const { headers, rows } = collectDataFor(key);
-  if (!headers.length) return;
-
-  if (fmt === 'csv') {
-    const csv = toCSV([headers, ...rows]);
-    downloadBlob(csv, `${fileBase}.csv`, 'text/csv;charset=utf-8;');
-  } else {
-    const html = toHTMLTable(headers, rows);
-    downloadBlob(html, `${fileBase}.xls`, 'application/vnd.ms-excel;charset=utf-8;');
-  }
-}
 
 function collectDataFor(key) {
   if (key === 'deudores') {
@@ -1106,4 +1091,110 @@ function resetPasswordForm() {
   document.getElementById(SELECTORS_EXTRAS.formPassword)?.reset();
   document.getElementById(SELECTORS_EXTRAS.pwdNueva)?.setCustomValidity('');
   document.getElementById(SELECTORS_EXTRAS.pwdConfirmar)?.setCustomValidity('');
+}
+
+/* ============================================================================
+ * Máscaras y formato Colombia (solo estético, sin romper lógica existente)
+ * ==========================================================================*/
+
+// Deja solo dígitos
+function unformatDigits(s) {
+  return (s || '').replace(/\D+/g, '');
+}
+
+// CC: 1.234.567.890
+function formatCC(digits) {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// Teléfono CO: 300 123 4567 / 601 234 5678 / +57 ...
+function formatPhoneCO(digits) {
+  if (!digits) return '';
+  // Country code: +57
+  if (digits.startsWith('57')) {
+    const rest = digits.slice(2);
+    return rest ? `+57 ${formatPhoneCO(rest)}` : '+57';
+  }
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0,3)} ${digits.slice(3)}`;
+  if (digits.length <= 10) return `${digits.slice(0,3)} ${digits.slice(3,6)} ${digits.slice(6)}`;
+  if (digits.length <= 13) return `${digits.slice(0,3)} ${digits.slice(3,6)} ${digits.slice(6,10)} ${digits.slice(10)}`;
+  return digits;
+}
+
+// COP: 150.000 (sin decimales)
+function formatCOP(digitsOrString) {
+  const n = Number(unformatDigits(digitsOrString)) || 0;
+  return n.toLocaleString('es-CO');
+}
+
+// Aplica una máscara manteniendo valor "raw" en data-attr.
+// NOTA: corre DESPUÉS del sanitizer que ya tienes, por orden de registro.
+function applyMask(id, formatter) {
+  const el = byId(id);
+  if (!el) return;
+
+  const toRaw = () => {
+    const raw = unformatDigits(el.value);
+    el.value = raw;
+    el.dataset.raw = raw;
+  };
+
+  const toMask = () => {
+    const raw = unformatDigits(el.value);
+    el.value = formatter(raw);
+    el.dataset.raw = raw;
+  };
+
+  // Al enfocar, muestro dígitos para editar fácil; al escribir/blur, muestro máscara
+  el.addEventListener('focus', toRaw);
+  el.addEventListener('input', toMask);
+  el.addEventListener('blur', toMask);
+
+  // Inicial
+  toMask();
+}
+
+// Instala máscaras en los campos solicitados
+function setupColombiaMasks() {
+  // CC
+  applyMask(SELECTORS.nuevoIdentificacion, formatCC);
+  applyMask(SELECTORS.deudorIdentificacion, formatCC);
+
+  // Teléfonos
+  applyMask(SELECTORS.nuevoTelefono, formatPhoneCO);
+  applyMask(SELECTORS.deudorTelefono, formatPhoneCO);
+
+  // Montos (Préstamo y Pago)
+  applyMask(SELECTORS.inputPrestamoMonto, formatCOP);
+  applyMask(SELECTORS.inputPagoMonto, formatCOP);
+}
+
+// Antes de que se dispare tu listener de submit, normalizamos los campos
+// a dígitos (captura) para que validateForm y parseInt funcionen igual que siempre.
+function installPreSubmitNormalizers() {
+  const normalize = (ids) => {
+    ids.forEach(id => {
+      const el = byId(id);
+      if (el) el.value = unformatDigits(el.value);
+    });
+  };
+
+  // Importante: usamos capture:true para ejecutar antes de tus handlers de submit.
+  byId(SELECTORS.formPrestamo)?.addEventListener('submit', () => {
+    normalize([SELECTORS.inputPrestamoMonto]);
+  }, { capture: true });
+
+  byId(SELECTORS.formPago)?.addEventListener('submit', () => {
+    normalize([SELECTORS.inputPagoMonto]);
+  }, { capture: true });
+
+  // Opcional: limpiar CC/teléfono al enviar (no afecta backend)
+  byId(SELECTORS.formDeudor)?.addEventListener('submit', () => {
+    normalize([SELECTORS.deudorIdentificacion, SELECTORS.deudorTelefono]);
+  }, { capture: true });
+
+  byId(SELECTORS.formCobrador)?.addEventListener('submit', () => {
+    normalize([SELECTORS.nuevoIdentificacion, SELECTORS.nuevoTelefono]);
+  }, { capture: true });
 }

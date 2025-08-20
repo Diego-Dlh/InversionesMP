@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <link rel="icon" href="/img/favicon.ico" sizes="64x64">
+  <link rel="icon" href="/img/favicon.ico" sizes="any">
   <meta charset="UTF-8" />
   <title>InversionesMP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -357,7 +357,8 @@
         <select id="prestamo-deudor" required class="w-full rounded-xl border border-gray-300 px-3 py-2">
           <option value="">Seleccione deudor</option>
         </select>
-        <input id="prestamo-monto" type="number" required placeholder="Monto" class="w-full rounded-xl border border-gray-300 px-3 py-2" />
+        <input id="prestamo-monto" type="text" inputmode="numeric" autocomplete="off"
+        required placeholder="Monto" class="w-full rounded-xl border border-gray-300 px-3 py-2" />
         <select id="prestamo-interes" required class="w-full rounded-xl border border-gray-300 px-3 py-2">
           <option value="">Interés (%)</option>
           <option value="10">10%</option>
@@ -389,7 +390,8 @@
         <select id="pago-prestamo" required class="w-full rounded-xl border border-gray-300 px-3 py-2">
           <option value="">Seleccionar Préstamo</option>
         </select>
-        <input id="pago-monto" type="number" required placeholder="Monto Pagado" class="w-full rounded-xl border border-gray-300 px-3 py-2" />
+        <input id="pago-monto" type="text" inputmode="numeric" autocomplete="off"
+        required placeholder="Monto Pagado" class="w-full rounded-xl border border-gray-300 px-3 py-2" />
         <input id="pago-fecha" type="date" required class="w-full rounded-xl border border-gray-300 px-3 py-2" />
         <button type="submit" class="w-full rounded-xl bg-black px-4 py-2 text-white">Guardar</button>
       </form>
