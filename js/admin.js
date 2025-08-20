@@ -4,11 +4,12 @@
  * Imports
  * ==========================================================================*/
 import { fetchWithAuth } from './api.js';
+import { API_BASE } from './config.js';
+
 
 /* ============================================================================
  * Config / Selectores
  * ==========================================================================*/
-const API_BASE = 'http://31.97.138.41/api';
 
 const SELECTORS = {
   // acciones generales
@@ -1115,3 +1116,4 @@ function resetPasswordForm() {
   document.getElementById(SELECTORS_EXTRAS.pwdNueva)?.setCustomValidity('');
   document.getElementById(SELECTORS_EXTRAS.pwdConfirmar)?.setCustomValidity('');
 }
+
