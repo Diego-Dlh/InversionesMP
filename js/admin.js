@@ -130,6 +130,138 @@ const slicePage = (key) => {
   return view.slice(start, start + pageSize);
 };
 
+/* ----- Estado de orden por tabla ----- */
+const sortState = {
+  deudores: 'fecha_desc',     // Por defecto: fecha de creación (recientes primero)
+  prestamos: 'fecha_desc',    // Mantiene tu comportamiento actual
+  pagos: 'fecha_desc',        // Mantiene tu comportamiento actual
+  cobradores: 'nombre_asc'    // Mantiene tu comportamiento actual
+};
+
+function applySort(tableKey, data) {
+  const key = sortState[tableKey];
+  const arr = [...(data || [])];
+
+  if (tableKey === 'deudores') {
+    switch (key) {
+      case 'fecha_desc': return arr.sort((a,b) => toTime(b.fecha_creacion) - toTime(a.fecha_creacion));
+      case 'fecha_asc':  return arr.sort((a,b) => toTime(a.fecha_creacion) - toTime(b.fecha_creacion));
+      case 'nombre_asc': return arr.sort((a,b) => cmpText(`${a.nombre} ${a.apellido}`, `${b.nombre} ${b.apellido}`));
+      case 'nombre_desc':return arr.sort((a,b) => cmpText(`${b.nombre} ${b.apellido}`, `${a.nombre} ${a.apellido}`));
+      case 'id_asc':     return arr.sort((a,b) => (a.id??0) - (b.id??0));
+      case 'id_desc':    return arr.sort((a,b) => (b.id??0) - (a.id??0));
+      case 'tipo_asc':   return arr.sort((a,b) => (a.tipo??0) - (b.tipo??0));
+      case 'tipo_desc':  return arr.sort((a,b) => (b.tipo??0) - (a.tipo??0));
+      default: return arr;
+    }
+  }
+
+  if (tableKey === 'prestamos') {
+    switch (key) {
+      case 'fecha_desc': return arr.sort((a,b) => toTime(b.fecha) - toTime(a.fecha));
+      case 'fecha_asc':  return arr.sort((a,b) => toTime(a.fecha) - toTime(b.fecha));
+      case 'monto_desc': return arr.sort((a,b) => (b.monto??0) - (a.monto??0));
+      case 'monto_asc':  return arr.sort((a,b) => (a.monto??0) - (b.monto??0));
+      case 'saldo_desc': return arr.sort((a,b) => (b.saldo_pendiente??0) - (a.saldo_pendiente??0));
+      case 'saldo_asc':  return arr.sort((a,b) => (a.saldo_pendiente??0) - (b.saldo_pendiente??0));
+      case 'meses_desc': return arr.sort((a,b) => (b.meses??0) - (a.meses??0));
+      case 'meses_asc':  return arr.sort((a,b) => (a.meses??0) - (b.meses??0));
+      case 'estado_asc': return arr.sort((a,b) => (a.estado??0) - (b.estado??0));
+      case 'estado_desc':return arr.sort((a,b) => (b.estado??0) - (a.estado??0));
+      case 'deudor_asc': return arr.sort((a,b) => cmpText(deudoresMap.get(String(a.deudor)),'') - cmpText(deudoresMap.get(String(b.deudor)),''));
+      case 'deudor_desc':return arr.sort((a,b) => cmpText(deudoresMap.get(String(b.deudor)),'') - cmpText(deudoresMap.get(String(a.deudor)),''));
+      case 'cobrador_asc': return arr.sort((a,b) => cmpText(usuariosMap.get(String(a.cobrador)),'') - cmpText(usuariosMap.get(String(b.cobrador)),''));
+      case 'cobrador_desc':return arr.sort((a,b) => cmpText(usuariosMap.get(String(b.cobrador)),'') - cmpText(usuariosMap.get(String(a.cobrador)),''));
+      default: return arr;
+    }
+  }
+
+  if (tableKey === 'pagos') {
+    switch (key) {
+      case 'fecha_desc': return arr.sort((a,b) => toTime(b.fecha) - toTime(a.fecha));
+      case 'fecha_asc':  return arr.sort((a,b) => toTime(a.fecha) - toTime(b.fecha));
+      case 'monto_desc': return arr.sort((a,b) => (b.monto_pagado??0) - (a.monto_pagado??0));
+      case 'monto_asc':  return arr.sort((a,b) => (a.monto_pagado??0) - (b.monto_pagado??0));
+      case 'deudor_asc': return arr.sort((a,b) => cmpText(getNombreDeudorDesdePago(a), getNombreDeudorDesdePago(b)));
+      case 'deudor_desc':return arr.sort((a,b) => cmpText(getNombreDeudorDesdePago(b), getNombreDeudorDesdePago(a)));
+      case 'cobrador_asc': return arr.sort((a,b) => cmpText(getNombreCobradorDesdePago(a), getNombreCobradorDesdePago(b)));
+      case 'cobrador_desc':return arr.sort((a,b) => cmpText(getNombreCobradorDesdePago(b), getNombreCobradorDesdePago(a)));
+      default: return arr;
+    }
+  }
+
+  if (tableKey === 'cobradores') {
+    switch (key) {
+      case 'nombre_asc': return arr.sort((a,b) => cmpText(`${a.nombre} ${a.apellido}`, `${b.nombre} ${b.apellido}`));
+      case 'nombre_desc':return arr.sort((a,b) => cmpText(`${b.nombre} ${b.apellido}`, `${a.nombre} ${a.apellido}`));
+      case 'ident_asc':  return arr.sort((a,b) => (a.identificacion??0) - (b.identificacion??0));
+      case 'ident_desc': return arr.sort((a,b) => (b.identificacion??0) - (a.identificacion??0));
+      case 'tel_asc':    return arr.sort((a,b) => cmpText(a.telefono, b.telefono));
+      case 'tel_desc':   return arr.sort((a,b) => cmpText(b.telefono, a.telefono));
+      default: return arr;
+    }
+  }
+
+  return arr;
+}
+
+function getSortOptions(tableKey) {
+  if (tableKey === 'deudores') {
+    return [
+      ['fecha_desc','Fecha creación (recientes)'],
+      ['fecha_asc','Fecha creación (antiguos)'],
+      ['nombre_asc','Nombre (A→Z)'],
+      ['nombre_desc','Nombre (Z→A)'],
+      ['id_asc','Identificación (↑)'],
+      ['id_desc','Identificación (↓)'],
+      ['tipo_asc','Tipo (↑)'],
+      ['tipo_desc','Tipo (↓)'],
+    ];
+  }
+  if (tableKey === 'prestamos') {
+    return [
+      ['fecha_desc','Fecha (recientes)'],
+      ['fecha_asc','Fecha (antiguos)'],
+      ['monto_desc','Monto (↓)'],
+      ['monto_asc','Monto (↑)'],
+      ['saldo_desc','Saldo (↓)'],
+      ['saldo_asc','Saldo (↑)'],
+      ['meses_desc','Meses (↓)'],
+      ['meses_asc','Meses (↑)'],
+      ['estado_asc','Estado (↑)'],
+      ['estado_desc','Estado (↓)'],
+      ['deudor_asc','Deudor (A→Z)'],
+      ['deudor_desc','Deudor (Z→A)'],
+      ['cobrador_asc','Cobrador (A→Z)'],
+      ['cobrador_desc','Cobrador (Z→A)'],
+    ];
+  }
+  if (tableKey === 'pagos') {
+    return [
+      ['fecha_desc','Fecha (recientes)'],
+      ['fecha_asc','Fecha (antiguos)'],
+      ['monto_desc','Monto (↓)'],
+      ['monto_asc','Monto (↑)'],
+      ['deudor_asc','Deudor (A→Z)'],
+      ['deudor_desc','Deudor (Z→A)'],
+      ['cobrador_asc','Cobrador (A→Z)'],
+      ['cobrador_desc','Cobrador (Z→A)'],
+    ];
+  }
+  if (tableKey === 'cobradores') {
+    return [
+      ['nombre_asc','Nombre (A→Z)'],
+      ['nombre_desc','Nombre (Z→A)'],
+      ['ident_asc','Identificación (↑)'],
+      ['ident_desc','Identificación (↓)'],
+      ['tel_asc','Teléfono (A→Z)'],
+      ['tel_desc','Teléfono (Z→A)'],
+    ];
+  }
+  return [];
+}
+
+
 /* ============================================================================
  * Bootstrap
  * ==========================================================================*/
@@ -266,11 +398,13 @@ document.addEventListener('DOMContentLoaded', async () => {
  * ==========================================================================*/
 // Deudores (orden por nombre)
 function renderTablaDeudores(deudores) {
-  const ordenados = sortByNombre(deudores, d => `${d.nombre ?? ''} ${d.apellido ?? ''}`.trim());
+  // Orden por estado seleccionado (default: fecha_desc)
+  const ordenados = applySort('deudores', deudores);
   setView('deudores', ordenados);
   renderTablaDeudoresPage();
   updateToolbar('deudores');
 }
+
 function renderTablaDeudoresPage() {
   const tbody = byId(SELECTORS.tablaDeudores); if (!tbody) return;
   tbody.innerHTML = '';
@@ -295,7 +429,7 @@ function renderTablaDeudoresPage() {
 
 // Préstamos (orden por fecha desc)
 function renderTablaPrestamos(prestamos) {
-  const ordenados = sortByFechaDesc(prestamos, p => p.fecha);
+  const ordenados = applySort('prestamos', prestamos);
   setView('prestamos', ordenados);
   renderTablaPrestamosPage();
   updateToolbar('prestamos');
@@ -325,11 +459,12 @@ function renderTablaPrestamosPage() {
 
 // Pagos (orden por fecha desc)
 function renderTablaPagos(pagos) {
-  const ordenados = sortByFechaDesc(pagos, p => p.fecha);
+  const ordenados = applySort('pagos', pagos);
   setView('pagos', ordenados);
   renderTablaPagosPage();
   updateToolbar('pagos');
 }
+
 function renderTablaPagosPage() {
   const tbody = byId(SELECTORS.tablaPagos); if (!tbody) return;
   tbody.innerHTML = '';
@@ -349,7 +484,7 @@ function renderTablaPagosPage() {
 // Cobradores (oculta admin: rol 1)
 function renderTablaCobradores(cobradores) {
   const soloCobradores = (cobradores || []).filter(u => Number(u.rol) === 2);
-  const ordenados = sortByNombre(soloCobradores, c => `${c.nombre ?? ''} ${c.apellido ?? ''}`.trim());
+  const ordenados = applySort('cobradores', soloCobradores);
   setView('cobradores', ordenados);
   renderTablaCobradoresPage();
   updateToolbar('cobradores');
@@ -610,6 +745,7 @@ byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
     const msg = await explainBadRequest(res);
     mostrarToast('error', msg || 'Error al registrar el pago');
   }
+
 });
 
 /* ============================================================================
@@ -683,6 +819,10 @@ function mountToolbar(tbodyId, key, fileBase) {
   bar.className = 'table-toolbar';
   bar.innerHTML = `
     <div class="left flex items-center gap-2">
+      <label class="text-sm text-gray-600">
+        Ordenar:
+        <select id="sort-${key}" class="page-size" aria-label="Selector de orden"></select>
+      </label>
       <button id="exp-${key}-xls" class="export-btn">Exportar Excel</button>
     </div>
     <div class="right pager">
@@ -697,8 +837,10 @@ function mountToolbar(tbodyId, key, fileBase) {
     </div>`;
   scroll.insertAdjacentElement('afterend', bar);
 
+  // Export
   byId(`exp-${key}-xls`)?.addEventListener('click', () => exportTable(key, 'xls', fileBase));
 
+  // Paginación
   byId(`pgs-${key}`)?.addEventListener('change', (e) => {
     const n = parseInt(e.target.value, 10) || 10;
     paging[key].pageSize = n; paging[key].page = 1;
@@ -708,7 +850,22 @@ function mountToolbar(tbodyId, key, fileBase) {
   byId(`pg-${key}-next`)?.addEventListener('click', () => { paging[key].page = Math.min(pageCount(key), paging[key].page + 1); rerenderPage(key); });
 
   byId(`pgs-${key}`).value = String(paging[key].pageSize);
+
+  // --- Orden: poblar opciones y escuchar cambios ---
+  const sortSel = byId(`sort-${key}`);
+  const opts = getSortOptions(key);
+  if (sortSel && opts.length) {
+    sortSel.innerHTML = opts.map(([val, label]) => `<option value="${val}">${label}</option>`).join('');
+    sortSel.value = sortState[key];
+    sortSel.addEventListener('change', (e) => {
+      sortState[key] = e.target.value;
+      // re-aplicar orden sobre el dataset completo en memoria
+      paging[key].view = applySort(key, paging[key].view);
+      rerenderPage(key);
+    });
+  }
 }
+
 
 function updateToolbar(key) {
   const info = byId(`pg-${key}-info`), prev = byId(`pg-${key}-prev`), next = byId(`pg-${key}-next`);
