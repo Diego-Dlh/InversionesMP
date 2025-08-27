@@ -345,6 +345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Delegación: Eliminar (deudores y cobradores)
   byId(SELECTORS.tablaDeudores)?.addEventListener('click', onActionClick);
   byId(SELECTORS.tablaCobradores)?.addEventListener('click', onActionClick);
+  byId(SELECTORS.tablaPrestamos)?.addEventListener('click', onActionClick);
 
   // Modales: abrir/cerrar
   const modalCobrador = byId(SELECTORS.modalCobrador);
@@ -452,7 +453,12 @@ function renderTablaPrestamosPage() {
       <td class="p-2">${p.meses}</td>
       <td class="p-2">${formatearFecha(p.fecha)}</td>
       <td class="p-2"><span class="${estadoClase}">${estadoTexto}</span></td>
-      <td class="p-2">${escapeHTML(nombreCobrador)}</td>`;
+      <td class="p-2">${escapeHTML(nombreCobrador)}</td>
+      <td class="p-2 w-28">
+        <button class="inline-flex items-center justify-center rounded-lg border border-red-500 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-600 hover:text-white transition"
+                data-action="delete" data-type="prestamo" data-id="${String(p.id)}"
+                aria-label="Eliminar préstamo ${escapeHTML(nombreDeudor)}">Eliminar</button>
+      </td>`;
     tbody.appendChild(tr);
   });
 }
@@ -770,7 +776,13 @@ function hideConfirmModal() { byId('mp-confirm-overlay')?.classList.add('hidden'
 
 async function handleDelete(tipo, id) {
   const token = localStorage.getItem('token');
-  const endpoint = tipo === 'deudor' ? `${API_BASE}/deudores/${id}/` : `${API_BASE}/usuarios/${id}/`;
+  const endpoint =
+    tipo === 'deudor'
+      ? `${API_BASE}/deudores/${id}/`
+      : (tipo === 'prestamo'
+          ? `${API_BASE}/prestamos/${id}/`
+          : `${API_BASE}/usuarios/${id}/`);
+
 
   try {
     const res = await fetch(endpoint, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
@@ -781,8 +793,13 @@ async function handleDelete(tipo, id) {
         deudoresMap.delete(String(id));
         setText(SELECTORS.deudoresCount, deudoresGlobal.length);
         renderTablaDeudores(deudoresGlobal);
+      } else if (tipo === 'prestamo') {
+        prestamosGlobal = prestamosGlobal.filter(pr => String(pr.id) !== String(id));
+        setText(SELECTORS.prestamosCount, prestamosGlobal.length);
+        renderTablaPrestamos(prestamosGlobal);
+        cargarSelectPrestamos();
       } else {
-        usuariosGlobal = usuariosGlobal.filter(u => String(u.id) !== String(id));
+
         usuariosMap.delete(String(id));
         setText(SELECTORS.usuariosCount, usuariosGlobal.filter(u => Number(u.rol) === 2).length);
         renderTablaCobradores(usuariosGlobal);
@@ -821,7 +838,7 @@ function mountToolbar(tbodyId, key, fileBase) {
     <div class="left flex items-center gap-2">
       <label class="text-sm text-gray-600">
         Ordenar:
-        <select id="sort-${key}" class="page-size" aria-label="Selector de orden"></select>
+        <select id="sort-${key}" class="page-size w-24 text-sm p-1" aria-label="Selector de orden"></select>
       </label>
       <button id="exp-${key}-xls" class="export-btn">Exportar Excel</button>
     </div>
