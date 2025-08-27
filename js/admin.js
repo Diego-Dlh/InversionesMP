@@ -383,6 +383,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     SELECTORS.deudorTelefono,
     SELECTORS.nuevoTelefono
   ]);
+// Añadir sanitizadores para inputs de texto (evita que el mensaje "Este campo es obligatorio." quede pegado)
+attachTextSanitizers([
+  SELECTORS.deudorNombre,
+  SELECTORS.deudorApellido,
+  SELECTORS.deudorDireccion
+]);
 
   /* =======================
    * Menú de usuario + Password (NUEVO)
@@ -1084,6 +1090,17 @@ function attachNumericSanitizers(ids = []) {
       const clean = cur.replace(/[^\d]/g, '');
       if (cur !== clean) el.value = clean;
       if (el.validity.customError) el.setCustomValidity('');
+    });
+  });
+}
+// --- pega justo después de attachNumericSanitizers (línea ~1089) ---
+function attachTextSanitizers(ids = []) {
+  ids.forEach(id => {
+    const el = byId(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      // si hay un error personalizado, lo limpia al escribir
+      if (el.validity && el.validity.customError) el.setCustomValidity('');
     });
   });
 }
