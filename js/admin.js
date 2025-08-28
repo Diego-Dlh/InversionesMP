@@ -71,6 +71,8 @@ const SELECTORS = {
   selectPagoPrestamo: 'pago-prestamo',
   inputPagoMonto: 'pago-monto',
   inputPagoFecha: 'pago-fecha',
+  groupPagoPrestamo: 'pago-prestamo-group',
+
 
   // deudor modal
   selectDeudorCobrador: 'deudor-cobrador',
@@ -360,9 +362,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   byId(SELECTORS.btnToggleModalPrestamo)?.addEventListener('click', () => { cargarSelectDeudores(); modalPrestamo?.classList.remove('hidden'); });
   byId(SELECTORS.btnCloseModalPrestamo)?.addEventListener('click', () => { modalPrestamo?.classList.add('hidden'); byId(SELECTORS.formPrestamo)?.reset(); });
 
+  byId(SELECTORS.btnToggleModalPago)?.addEventListener('click', () => {
+  const modalPago = byId(SELECTORS.modalPago);
+  byId(SELECTORS.formPago)?.reset();
+  cargarSelectPrestamos();
+  byId(SELECTORS.groupPagoPrestamo)?.classList.remove('hidden'); // mostrar selector cuando se abre global
+  modalPago?.classList.remove('hidden');
+});
+
   const modalPago = byId(SELECTORS.modalPago);
   byId(SELECTORS.btnToggleModalPago)?.addEventListener('click', () => { cargarSelectPrestamos(); modalPago?.classList.remove('hidden'); });
-  byId(SELECTORS.btnCloseModalPago)?.addEventListener('click', () => { modalPago?.classList.add('hidden'); byId(SELECTORS.formPago)?.reset(); });
+  byId(SELECTORS.btnCloseModalPago)?.addEventListener('click', () => {
+  const modalPago = byId(SELECTORS.modalPago);
+  modalPago?.classList.add('hidden');
+  byId(SELECTORS.formPago)?.reset();
+  byId(SELECTORS.groupPagoPrestamo)?.classList.remove('hidden'); // dejar visible para la próxima apertura
+});
+
 
   // Confirmación (Eliminar)
   byId('mp-confirm-cancel')?.addEventListener('click', () => { pendingDelete = null; hideConfirmModal(); });
@@ -460,11 +476,23 @@ function renderTablaPrestamosPage() {
       <td class="p-2">${formatearFecha(p.fecha)}</td>
       <td class="p-2"><span class="${estadoClase}">${estadoTexto}</span></td>
       <td class="p-2">${escapeHTML(nombreCobrador)}</td>
-      <td class="p-2 w-28">
-        <button class="inline-flex items-center justify-center rounded-lg border border-red-500 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-600 hover:text-white transition"
-                data-action="delete" data-type="prestamo" data-id="${String(p.id)}"
-                aria-label="Eliminar préstamo ${escapeHTML(nombreDeudor)}">Eliminar</button>
+                  <td class="p-2 w-32">
+        <div class="flex items-center gap-1">
+          ${Number(p.saldo_pendiente) > 0
+            ? (
+              '<button class="inline-flex items-center justify-center rounded-lg border border-indigo-500 px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-600 hover:text-white transition" ' +
+              'data-action="pagar" data-type="prestamo" data-id="' + String(p.id) + '"' +
+              ' aria-label="Registrar pago préstamo ' + escapeHTML(nombreDeudor) + '">Pagar</button>'
+            )
+            : ''
+          }
+          <button class="inline-flex items-center justify-center rounded-lg border border-red-500 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-600 hover:text-white transition"
+                  data-action="delete" data-type="prestamo" data-id="${String(p.id)}"
+                  aria-label="Eliminar préstamo ${escapeHTML(nombreDeudor)}">Eliminar</button>
+        </div>
       </td>`;
+
+
     tbody.appendChild(tr);
   });
 }
@@ -764,12 +792,42 @@ byId(SELECTORS.formPago)?.addEventListener('submit', async (e) => {
  * Eliminar (delegación + modal confirmación)
  * ==========================================================================*/
 function onActionClick(e) {
-  const btn = e.target.closest('button[data-action="delete"]');
+  const btn = e.target.closest('button[data-action]');
   if (!btn) return;
+
+  const action = btn.dataset.action;
+  const tipo = btn.dataset.type;
   const id = btn.dataset.id;
-  const tipo = btn.dataset.type; // 'deudor' | 'cobrador'
-  showConfirmModal(tipo, id, btn.getAttribute('aria-label') || '');
+
+  if (action === 'delete') {
+    showConfirmModal(tipo, id, btn.getAttribute('aria-label') || '');
+  } else if (action === 'pagar' && tipo === 'prestamo') {
+    abrirModalPagoParaPrestamo(id);
+  }
 }
+function abrirModalPagoParaPrestamo(prestamoId) {
+  const modalPago = byId(SELECTORS.modalPago);
+  const group = byId(SELECTORS.groupPagoPrestamo);
+  const select = byId(SELECTORS.selectPagoPrestamo);
+
+  // Limpiar y poblar opciones para que exista la opción del préstamo
+  byId(SELECTORS.formPago)?.reset();
+  cargarSelectPrestamos();
+
+  // Preseleccionar el préstamo de la fila
+  if (select) {
+    select.value = String(prestamoId);
+  }
+
+  // Ocultar el selector (el usuario no debe cambiarlo en este flujo)
+  if (group) {
+    group.classList.add('hidden');
+  }
+
+  // Abrir modal
+  modalPago?.classList.remove('hidden');
+}
+
 
 function showConfirmModal(tipo, id, label) {
   pendingDelete = { tipo, id };
