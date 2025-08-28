@@ -1201,6 +1201,7 @@ function cargarSelectPrestamos() {
   if (!select) return;
   select.innerHTML = '<option value="">Seleccionar Préstamo</option>';
   (prestamosGlobal || []).forEach(p => {
+    if (p.saldo_pendiente <= 0) return;
     const nombre = deudoresMap.get(String(p.deudor)) || `ID: ${p.deudor}`;
     const opt = document.createElement('option');
     opt.value = p.id;
