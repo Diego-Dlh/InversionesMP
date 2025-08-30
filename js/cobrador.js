@@ -541,6 +541,48 @@ function getNombreCobradorDesdePago(pago) {
 /* ============================================================================
  * Formularios + Validaciones y actualizaciones de cards
  * ==========================================================================*/
+// Cobrador: crear
+byId(SELECTORS.formCobrador)?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!validateForm([
+    { id: SELECTORS.nuevoNombre, type: 'text' },
+    { id: SELECTORS.nuevoApellido, type: 'text' },
+    { id: SELECTORS.nuevoIdentificacion, type: 'numberPositive' },
+    { id: SELECTORS.nuevoTelefono, type: 'numberPositive' }
+  ])) return;
+
+  const data = {
+    nombre: byId(SELECTORS.nuevoNombre).value.trim(),
+    apellido: byId(SELECTORS.nuevoApellido).value.trim(),
+    identificacion: byId(SELECTORS.nuevoIdentificacion).value.trim(),
+    telefono: byId(SELECTORS.nuevoTelefono).value.trim(),
+    contraseña: '123456789',
+    rol: 2
+  };
+  const token = localStorage.getItem('token');
+
+  const res = await fetch(`${API_BASE}/usuarios/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok) {
+    usuariosGlobal = await fetchWithAuth(`${API_BASE}/usuarios/`);
+    usuariosMap = new Map(usuariosGlobal.map(u => [String(u.id), `${u.nombre} ${u.apellido ?? ''}`.trim()]));
+    setText(SELECTORS.usuariosCount, usuariosGlobal.filter(u => Number(u.rol) === 2).length);
+    renderTablaCobradores(usuariosGlobal);
+    poblarFiltroCobrador(usuariosGlobal);
+    cargarOpcionesCobradores(usuariosGlobal);
+
+    byId(SELECTORS.modalCobrador)?.classList.add('hidden');
+    byId(SELECTORS.formCobrador)?.reset();
+    mostrarToast('exito', 'Cobrador creado con éxito');
+  } else {
+    mostrarToast('error', 'Error al crear cobrador');
+  }
+});
+
 // Deudor: crear
 byId(SELECTORS.formDeudor)?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -761,6 +803,7 @@ async function handleDelete(tipo, id) {
 
         usuariosMap.delete(String(id));
         setText(SELECTORS.usuariosCount, usuariosGlobal.filter(u => Number(u.rol) === 2).length);
+        renderTablaCobradores(usuariosGlobal);
         poblarFiltroCobrador(usuariosGlobal);
         cargarOpcionesCobradores(usuariosGlobal);
       }
@@ -854,9 +897,99 @@ function updateToolbar(key) {
 
 function rerenderPage(key) {
   if (key === 'deudores') renderTablaDeudoresPage();
+  else if (key === 'cobradores') renderTablaCobradoresPage();
   else if (key === 'prestamos') renderTablaPrestamosPage();
   else if (key === 'pagos') renderTablaPagosPage();
   updateToolbar(key);
+}
+
+/* ============================================================================
+ * Export CSV / Excel
+ * ==========================================================================*/
+function exportTable(key, fmt = 'csv', fileBase = 'export') {
+  const { headers, rows } = collectDataFor(key);
+  if (!headers.length) return;
+
+  if (fmt === 'csv') {
+    const csv = toCSV([headers, ...rows]);
+    downloadBlob(csv, `${fileBase}.csv`, 'text/csv;charset=utf-8;');
+  } else {
+    const html = toHTMLTable(headers, rows);
+    downloadBlob(html, `${fileBase}.xls`, 'application/vnd.ms-excel;charset=utf-8;');
+  }
+}
+
+function collectDataFor(key) {
+  if (key === 'deudores') {
+    const headers = ['Nombre', 'Identificación', 'Teléfono', 'Dirección', 'Tipo'];
+    const rows = (paging.deudores.view || []).map(d => [
+      `${d.nombre ?? ''} ${d.apellido ?? ''}`.trim(),
+      d.id ?? '',
+      d.telefono ?? '',
+      d.direccion ?? '',
+      d.tipo == '1' ? 'normal' : (d.tipo == '2' ? 'especial' : '')
+    ]);
+    return { headers, rows };
+  }
+  if (key === 'cobradores') {
+    const headers = ['Nombre', 'Identificación', 'Teléfono'];
+    const rows = (paging.deudores.view || []).map(c => [
+      `${c.nombre ?? ''} ${c.apellido ?? ''}`.trim(),
+      c.identificacion ?? '',
+      c.telefono ?? ''
+    ]);
+    return { headers, rows };
+  }
+  if (key === 'prestamos') {
+    const headers = ['Deudor', 'Monto', 'Saldo Pendiente', 'Meses', 'Fecha', 'Estado', 'Cobrador'];
+    const rows = (paging.prestamos.view || []).map(p => [
+      deudoresMap.get(String(p.deudor)) || `ID: ${p.deudor}`,
+      Number(p.monto) || 0,
+      Number(p.saldo_pendiente) || 0,
+      p.meses ?? '',
+      formatearFecha(p.fecha),
+      p.estado === 1 ? 'Pendiente' : (p.estado === 2 ? 'Pagado' : (p.estado === 3 ? 'En mora' : 'Desconocido')),
+      usuariosMap.get(String(p.cobrador)) || `ID: ${p.cobrador}`
+    ]);
+    return { headers, rows };
+  }
+  if (key === 'pagos') {
+    const headers = ['Deudor', 'Cobrador', 'Monto', 'Fecha'];
+    const rows = (paging.pagos.view || []).map(p => [
+      getNombreDeudorDesdePago(p),
+      getNombreCobradorDesdePago(p),
+      Number(p.monto_pagado) || 0,
+      formatearFecha(p.fecha)
+    ]);
+    return { headers, rows };
+  }
+  return { headers: [], rows: [] };
+}
+
+function toCSV(matrix) {
+  return matrix.map(row =>
+    row.map(cell => {
+      let v = cell ?? '';
+      if (typeof v === 'number') v = String(v);
+      v = String(v);
+      if (/[",\n;]/.test(v)) v = `"${v.replace(/"/g, '""')}"`;
+      return v;
+    }).join(',')
+  ).join('\n');
+}
+
+function toHTMLTable(headers, rows) {
+  const h = `<tr>${headers.map(h => `<th>${escapeHTML(h)}</th>`).join('')}</tr>`;
+  const r = rows.map(cells => `<tr>${cells.map(c => `<td>${escapeHTML(c)}</td>`).join('')}</tr>`).join('');
+  return `<!doctype html><html><head><meta charset="utf-8"></head><body><table>${h}${r}</table></body></html>`;
+}
+
+function downloadBlob(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 /* ============================================================================
